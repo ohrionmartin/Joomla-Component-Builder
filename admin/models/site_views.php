@@ -26,6 +26,7 @@ class ComponentbuilderModelSite_views extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
@@ -63,8 +64,15 @@ class ComponentbuilderModelSite_views extends JModelList
 			$this->context .= '.' . $layout;
 		}
 
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
+
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
@@ -82,25 +90,53 @@ class ComponentbuilderModelSite_views extends JModelList
 		$this->setState('filter.search', $search);
 
 		$main_get = $this->getUserStateFromRequest($this->context . '.filter.main_get', 'filter_main_get');
-		$this->setState('filter.main_get', $main_get);
+		if ($formSubmited)
+		{
+			$main_get = $app->input->post->get('main_get');
+			$this->setState('filter.main_get', $main_get);
+		}
 
 		$add_php_ajax = $this->getUserStateFromRequest($this->context . '.filter.add_php_ajax', 'filter_add_php_ajax');
-		$this->setState('filter.add_php_ajax', $add_php_ajax);
+		if ($formSubmited)
+		{
+			$add_php_ajax = $app->input->post->get('add_php_ajax');
+			$this->setState('filter.add_php_ajax', $add_php_ajax);
+		}
 
 		$add_custom_button = $this->getUserStateFromRequest($this->context . '.filter.add_custom_button', 'filter_add_custom_button');
-		$this->setState('filter.add_custom_button', $add_custom_button);
+		if ($formSubmited)
+		{
+			$add_custom_button = $app->input->post->get('add_custom_button');
+			$this->setState('filter.add_custom_button', $add_custom_button);
+		}
 
 		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
-		$this->setState('filter.system_name', $system_name);
+		if ($formSubmited)
+		{
+			$system_name = $app->input->post->get('system_name');
+			$this->setState('filter.system_name', $system_name);
+		}
 
 		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
-		$this->setState('filter.name', $name);
+		if ($formSubmited)
+		{
+			$name = $app->input->post->get('name');
+			$this->setState('filter.name', $name);
+		}
 
 		$description = $this->getUserStateFromRequest($this->context . '.filter.description', 'filter_description');
-		$this->setState('filter.description', $description);
+		if ($formSubmited)
+		{
+			$description = $app->input->post->get('description');
+			$this->setState('filter.description', $description);
+		}
 
 		$context = $this->getUserStateFromRequest($this->context . '.filter.context', 'filter_context');
-		$this->setState('filter.context', $context);
+		if ($formSubmited)
+		{
+			$context = $app->input->post->get('context');
+			$this->setState('filter.context', $context);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -231,9 +267,17 @@ class ComponentbuilderModelSite_views extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -477,6 +521,7 @@ class ComponentbuilderModelSite_views extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		$id .= ':' . $this->getState('filter.access');
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');

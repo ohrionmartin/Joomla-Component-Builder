@@ -26,6 +26,7 @@ class ComponentbuilderModelServers extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
@@ -58,8 +59,15 @@ class ComponentbuilderModelServers extends JModelList
 			$this->context .= '.' . $layout;
 		}
 
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
+
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
@@ -77,10 +85,18 @@ class ComponentbuilderModelServers extends JModelList
 		$this->setState('filter.search', $search);
 
 		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
-		$this->setState('filter.name', $name);
+		if ($formSubmited)
+		{
+			$name = $app->input->post->get('name');
+			$this->setState('filter.name', $name);
+		}
 
 		$protocol = $this->getUserStateFromRequest($this->context . '.filter.protocol', 'filter_protocol');
-		$this->setState('filter.protocol', $protocol);
+		if ($formSubmited)
+		{
+			$protocol = $app->input->post->get('protocol');
+			$this->setState('filter.protocol', $protocol);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -193,9 +209,17 @@ class ComponentbuilderModelServers extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -448,6 +472,7 @@ class ComponentbuilderModelServers extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		$id .= ':' . $this->getState('filter.access');
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');

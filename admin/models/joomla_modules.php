@@ -26,6 +26,7 @@ class ComponentbuilderModelJoomla_modules extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
@@ -59,8 +60,15 @@ class ComponentbuilderModelJoomla_modules extends JModelList
 			$this->context .= '.' . $layout;
 		}
 
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
+
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
@@ -78,13 +86,25 @@ class ComponentbuilderModelJoomla_modules extends JModelList
 		$this->setState('filter.search', $search);
 
 		$target = $this->getUserStateFromRequest($this->context . '.filter.target', 'filter_target');
-		$this->setState('filter.target', $target);
+		if ($formSubmited)
+		{
+			$target = $app->input->post->get('target');
+			$this->setState('filter.target', $target);
+		}
 
 		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
-		$this->setState('filter.system_name', $system_name);
+		if ($formSubmited)
+		{
+			$system_name = $app->input->post->get('system_name');
+			$this->setState('filter.system_name', $system_name);
+		}
 
 		$description = $this->getUserStateFromRequest($this->context . '.filter.description', 'filter_description');
-		$this->setState('filter.description', $description);
+		if ($formSubmited)
+		{
+			$description = $app->input->post->get('description');
+			$this->setState('filter.description', $description);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -196,9 +216,17 @@ class ComponentbuilderModelJoomla_modules extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -262,6 +290,7 @@ class ComponentbuilderModelJoomla_modules extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		$id .= ':' . $this->getState('filter.access');
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
