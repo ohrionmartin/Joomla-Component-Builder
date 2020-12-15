@@ -96,6 +96,27 @@ class Get
 	public $compilerPath;
 
 	/**
+	 * Switch to add assets table fix
+	 *
+	 * @var     int
+	 */
+	public $addAssetsTableFix = 1;
+
+	/**
+	 * Assets table worse case
+	 *
+	 * @var     int
+	 */
+	public $accessWorseCase;
+
+	/**
+	 * Switch to add assets table name fix
+	 *
+	 * @var     bool
+	 */
+	public $addAssetsTableNameFix = false;
+
+	/**
 	 * Switch to add custom code placeholders
 	 *
 	 * @var     bool
@@ -340,6 +361,13 @@ class Get
 	 * @var      string
 	 */
 	public $componentCodeName;
+
+	/**
+	 * The Component Code Name Length
+	 *
+	 * @var      int
+	 */
+	public $componentCodeNameLength;
 
 	/**
 	 * The Component ID
@@ -908,6 +936,19 @@ class Get
 				// set component context
 				$this->componentContext = $this->componentCodeName . '.'
 					. $this->componentID;
+				// set the component name length
+				$this->componentCodeNameLength = strlen(
+					$this->componentCodeName
+				);
+				// add assets table fix
+				$global                  = (int) $this->params->get(
+					'assets_table_fix', 1
+				);
+				$this->addAssetsTableFix = (($add_assets_table_fix
+						= (int) ComponentbuilderHelper::getVar(
+						'joomla_component', $this->componentID, 'id',
+						'assets_table_fix'
+					)) == 3) ? $global : $add_assets_table_fix;
 				// set if language strings line breaks should be removed
 				$global                 = ((int) ComponentbuilderHelper::getVar(
 						'joomla_component', $this->componentID, 'id',
@@ -2221,6 +2262,16 @@ class Get
 				);
 			}
 
+			// check the length of the view name (+5 for com_ and _)
+			$name_length = $this->componentCodeNameLength + strlen(
+					$view->name_single_code
+				) + 5;
+			// when the name is larger then 49 we need to add the assets table name fix
+			if ($name_length > 49)
+			{
+				$this->addAssetsTableNameFix = true;
+			}
+
 			// set updater
 			$updater = array(
 				'unique' => array(
@@ -3309,7 +3360,12 @@ class Get
 
 		// Load the results as a list of stdClass objects (see later for more options on retrieving data).
 		$view = $this->db->loadObject();
-
+		// fix alias to use in code
+		$view->code = $this->uniqueCode(
+			ComponentbuilderHelper::safeString($view->codename)
+		);
+		$view->Code = ComponentbuilderHelper::safeString($view->code, 'F');
+		$view->CODE = ComponentbuilderHelper::safeString($view->code, 'U');
 		// Trigger Event: jcb_ce_onBeforeModelCustomViewData
 		$this->triggerEvent(
 			'jcb_ce_onBeforeModelCustomViewData',
@@ -3355,12 +3411,6 @@ class Get
 			$this->setDynamicValues(base64_decode($view->default)),
 			$guiMapper
 		);
-		// fix alias to use in code
-		$view->code = $this->uniqueCode(
-			ComponentbuilderHelper::safeString($view->codename)
-		);
-		$view->Code = ComponentbuilderHelper::safeString($view->code, 'F');
-		$view->CODE = ComponentbuilderHelper::safeString($view->code, 'U');
 		// load context if not set
 		if (!isset($view->context)
 			|| !ComponentbuilderHelper::checkString(
@@ -3986,8 +4036,6 @@ class Get
 						$this->_fieldData[$id]->css_view_decoded = true;
 					}
 				}
-				// add this only once to view.
-				$this->customFieldScript[$name_single][$id] = true;
 			}
 			// check if we should load scripts for list views
 			if (ComponentbuilderHelper::checkString($name_list)
@@ -4058,7 +4106,7 @@ class Get
 					$this->setCustomScriptBuilder(
 						$this->_fieldData[$id]->css_views,
 						'css_views',
-						$name_list,
+						$name_single,
 						false,
 						array('prefix' => PHP_EOL),
 						$convert__,
@@ -4070,10 +4118,11 @@ class Get
 						$this->_fieldData[$id]->css_views_decoded = true;
 					}
 				}
-
-				// add this only once to view.
-				$this->customFieldScript[$name_list][$id] = true;
 			}
+			// add this only once to single view.
+			$this->customFieldScript[$name_single][$id] = true;
+			// add this only once to list view.
+			$this->customFieldScript[$name_list][$id] = true;
 		}
 		if ($id > 0 && isset($this->_fieldData[$id]))
 		{
@@ -4154,7 +4203,8 @@ class Get
 	public function getListViewDefaultOrdering(&$nameListCode)
 	{
 		if (isset($this->viewsDefaultOrdering[$nameListCode])
-			&& $this->viewsDefaultOrdering[$nameListCode]['add_admin_ordering'] == 1)
+			&& $this->viewsDefaultOrdering[$nameListCode]['add_admin_ordering']
+			== 1)
 		{
 			foreach (
 				$this->viewsDefaultOrdering[$nameListCode]['admin_ordering_fields']
@@ -4167,15 +4217,16 @@ class Get
 				{
 					// just the first field is the based ordering state
 					return array(
-						'name' => $order_field_name,
+						'name'      => $order_field_name,
 						'direction' => $order_field['direction']
 					);
 				}
 			}
 		}
+
 		// the default
 		return array(
-			'name' => 'a.id',
+			'name'      => 'a.id',
 			'direction' => 'DESC'
 		);
 	}
@@ -5233,6 +5284,57 @@ class Get
 		}
 
 		return false;
+	}
+
+	/**
+	 * get the a script from the custom script builder
+	 *
+	 * @param   string  $first    The first key
+	 * @param   string  $second   The second key
+	 * @param   string  $prefix   The prefix to add in front of the script if found
+	 * @param   string  $note     The switch/note to add to the script
+	 * @param   bool    $unset    The switch to unset the value if found
+	 * @param   string  $default  The switch/string to use as default return if script not found
+	 * @param   string  $sufix    The sufix  to add after the script if found
+	 *
+	 * @return  mix    The string/script if found or the default value if not found
+	 *
+	 */
+	public function getCustomScriptBuilder($first, $second, $prefix = '',
+		$note = null, $unset = null, $default = null, $sufix = ''
+	) {
+		// default is to return an empty string
+		$script = '';
+		// check if there is any custom script
+		if (isset($this->customScriptBuilder[$first][$second])
+			&& ComponentbuilderHelper::checkString(
+				$this->customScriptBuilder[$first][$second]
+			))
+		{
+			// add not if set
+			if ($note)
+			{
+				$script .= $note;
+			}
+			// load the actual script
+			$script .= $prefix . str_replace(
+					array_keys($this->placeholders),
+					array_values($this->placeholders),
+					$this->customScriptBuilder[$first][$second]
+				) . $sufix;
+			// clear some memory
+			if ($unset)
+			{
+				unset($this->customScriptBuilder[$first][$second]);
+			}
+		}
+		// if not found return default
+		if (!ComponentbuilderHelper::checkString($script) && $default)
+		{
+			return $default;
+		}
+
+		return $script;
 	}
 
 	/**
@@ -8699,7 +8801,7 @@ class Get
 								$unique = $form['fields_name']
 									. $form['fieldset'];
 							}
-							// set global fields rule path switchs
+							// set global fields rule path switches
 							if ($module->fields_rules_paths == 1
 								&& isset($form['fields_rules_paths'])
 								&& $form['fields_rules_paths'] == 2)
@@ -9093,6 +9195,46 @@ class Get
 		$xml .= PHP_EOL . '</extension>';
 
 		return $xml;
+	}
+
+	/**
+	 * get the module admin custom script field
+	 *
+	 * @return  string
+	 *
+	 */
+	public function getModAdminVvvvvvvdm($fieldScriptBucket)
+	{
+		$form_field_class   = array();
+		$form_field_class[] = $this->hhh . 'BOM' . $this->hhh . PHP_EOL;
+		$form_field_class[] = "//" . $this->setLine(__LINE__)
+			. " No direct access to this file";
+		$form_field_class[] = "defined('_JEXEC') or die('Restricted access');";
+		$form_field_class[] = PHP_EOL . "use Joomla\CMS\Form\FormField;";
+		$form_field_class[] = "use Joomla\CMS\Factory;";
+		$form_field_class[] = PHP_EOL
+			. "class JFormFieldModadminvvvvvvvdm extends FormField";
+		$form_field_class[] = "{";
+		$form_field_class[] = $this->_t(1)
+			. "protected \$type = 'modadminvvvvvvvdm';";
+		$form_field_class[] = PHP_EOL . $this->_t(1)
+			. "protected function getLabel()";
+		$form_field_class[] = $this->_t(1) . "{";
+		$form_field_class[] = $this->_t(2) . "return;";
+		$form_field_class[] = $this->_t(1) . "}";
+		$form_field_class[] = PHP_EOL . $this->_t(1)
+			. "protected function getInput()";
+		$form_field_class[] = $this->_t(1) . "{";
+		$form_field_class[] = $this->_t(2) . "//" . $this->setLine(__LINE__)
+			. " Get the document";
+		$form_field_class[] = $this->_t(2)
+			. "\$document = Factory::getDocument();";
+		$form_field_class[] = implode(PHP_EOL, $fieldScriptBucket);
+		$form_field_class[] = $this->_t(2) . "return; // noting for now :)";
+		$form_field_class[] = $this->_t(1) . "}";
+		$form_field_class[] = "}";
+
+		return implode(PHP_EOL, $form_field_class);
 	}
 
 	/**

@@ -4777,57 +4777,6 @@ class Interpretation extends Fields
 		return false;
 	}
 
-	/**
-	 * get the a script from the custom script builder
-	 *
-	 * @param   string  $first    The first key
-	 * @param   string  $second   The second key
-	 * @param   string  $prefix   The prefix to add in front of the script if found
-	 * @param   string  $note     The switch/note to add to the script
-	 * @param   bool    $unset    The switch to unset the value if found
-	 * @param   string  $default  The switch/string to use as default return if script not found
-	 * @param   string  $sufix    The sufix  to add after the script if found
-	 *
-	 * @return  mix    The string/script if found or the default value if not found
-	 *
-	 */
-	public function getCustomScriptBuilder($first, $second, $prefix = '',
-		$note = null, $unset = null, $default = null, $sufix = ''
-	) {
-		// default is to return an empty string
-		$script = '';
-		// check if there is any custom script
-		if (isset($this->customScriptBuilder[$first][$second])
-			&& ComponentbuilderHelper::checkString(
-				$this->customScriptBuilder[$first][$second]
-			))
-		{
-			// add not if set
-			if ($note)
-			{
-				$script .= $note;
-			}
-			// load the actual script
-			$script .= $prefix . str_replace(
-					array_keys($this->placeholders),
-					array_values($this->placeholders),
-					$this->customScriptBuilder[$first][$second]
-				) . $sufix;
-			// clear some memory
-			if ($unset)
-			{
-				unset($this->customScriptBuilder[$first][$second]);
-			}
-		}
-		// if not found return default
-		if (!ComponentbuilderHelper::checkString($script) && $default)
-		{
-			return $default;
-		}
-
-		return $script;
-	}
-
 	public function setCustomViewListQuery(&$get, $code, $return = true)
 	{
 		if (ComponentbuilderHelper::checkObject($get))
@@ -5104,7 +5053,7 @@ class Interpretation extends Fields
 	public function setAdminViewDisplayMethod($nameListCode)
 	{
 		$script = '';
-		// add the the new filter methods for the search toolbar above the list view
+		// add the the new filter methods for the search toolbar above the list view (2 = topbar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 2)
 		{
@@ -8019,6 +7968,8 @@ class Interpretation extends Fields
 		$script .= $this->getCustomScriptBuilder(
 			'php_postflight', 'install', PHP_EOL . PHP_EOL, null, true
 		);
+		// add the Intelligent Fix script if needed
+		$script .= $this->getAssetsTableIntelligentInstall();
 		// add the component install notice
 		if (ComponentbuilderHelper::checkString($script))
 		{
@@ -8179,7 +8130,7 @@ class Interpretation extends Fields
 					$script .= PHP_EOL . $this->_t(3) . "{";
 					$script .= PHP_EOL . $this->_t(4) . "//" . $this->setLine(
 							__LINE__
-						) . " If succesfully remove " . $viewsCodeName
+						) . " If successfully remove " . $viewsCodeName
 						. " add queued success message.";
 					// TODO lang is not translated
 					$script .= PHP_EOL . $this->_t(4)
@@ -8215,7 +8166,7 @@ class Interpretation extends Fields
 					$script .= PHP_EOL . $this->_t(3) . "{";
 					$script .= PHP_EOL . $this->_t(4) . "//" . $this->setLine(
 							__LINE__
-						) . " If succesfully remove " . $viewsCodeName
+						) . " If successfully remove " . $viewsCodeName
 						. " add queued success message.";
 					// TODO lang is not translated
 					$script .= PHP_EOL . $this->_t(4)
@@ -8289,7 +8240,7 @@ class Interpretation extends Fields
 					$script .= PHP_EOL . $this->_t(3) . "{";
 					$script .= PHP_EOL . $this->_t(4) . "//" . $this->setLine(
 							__LINE__
-						) . " If succesfully remove " . $viewsCodeName
+						) . " If successfully remove " . $viewsCodeName
 						. " add queued success message.";
 					// TODO lang is not translated
 					$script .= PHP_EOL . $this->_t(4)
@@ -8365,7 +8316,7 @@ class Interpretation extends Fields
 				$script .= PHP_EOL . $this->_t(3) . "{";
 				$script .= PHP_EOL . $this->_t(4) . "//" . $this->setLine(
 						__LINE__
-					) . " If succesfully remove " . $viewsCodeName
+					) . " If successfully remove " . $viewsCodeName
 					. " add queued success message.";
 				// TODO lang is not translated
 				$script .= PHP_EOL . $this->_t(4)
@@ -8400,7 +8351,7 @@ class Interpretation extends Fields
 				$script .= PHP_EOL . $this->_t(3) . "{";
 				$script .= PHP_EOL . $this->_t(4) . "//" . $this->setLine(
 						__LINE__
-					) . " If succesfully remove " . $viewsCodeName
+					) . " If successfully remove " . $viewsCodeName
 					. " add queued success message.";
 				// TODO lang is not translated
 				$script .= PHP_EOL . $this->_t(4)
@@ -8435,7 +8386,7 @@ class Interpretation extends Fields
 				$script .= PHP_EOL . $this->_t(3) . "{";
 				$script .= PHP_EOL . $this->_t(4) . "//" . $this->setLine(
 						__LINE__
-					) . " If succesfully remove " . $viewsCodeName
+					) . " If successfully removed " . $viewsCodeName
 					. " add queued success message.";
 				// TODO lang is not translated
 				$script .= PHP_EOL . $this->_t(4)
@@ -8533,7 +8484,7 @@ class Interpretation extends Fields
 			$script .= PHP_EOL . $this->_t(2) . "if (\$" . $view . "_done)";
 			$script .= PHP_EOL . $this->_t(2) . "{";
 			$script .= PHP_EOL . $this->_t(3) . "//" . $this->setLine(__LINE__)
-				. " If succesfully remove " . $component
+				. " If successfully removed " . $component
 				. " add queued success message.";
 			// TODO lang is not translated
 			$script .= PHP_EOL . $this->_t(3) . "\$app->enqueueMessage(JText:"
@@ -8542,12 +8493,164 @@ class Interpretation extends Fields
 			// done
 			$script .= PHP_EOL;
 		}
+		// add the Intelligent Reversal script if needed
+		$script .= $this->getAssetsTableIntelligentUninstall();
 		// add the custom uninstall script
 		$script .= $this->getCustomScriptBuilder(
 			'php_method', 'uninstall', "", null, true, null, PHP_EOL
 		);
 
 		return $script;
+	}
+
+	/**
+	 * build code for the assets table script intelligent fix
+	 *
+	 * @return  string The php to place in script.php
+	 *
+	 */
+	protected function getAssetsTableIntelligentInstall()
+	{
+		// WHY DO WE NEED AN ASSET TABLE FIX?
+		// https://www.mysqltutorial.org/mysql-varchar/
+		// https://stackoverflow.com/a/15227917/1429677
+		// https://forums.mysql.com/read.php?24,105964,105964
+		// https://github.com/vdm-io/Joomla-Component-Builder/issues/616#issuecomment-741502980
+		// 30 actions each +-20 characters with 8 groups
+		// that makes 4800 characters and the current Joomla
+		// column size is varchar(5120)
+
+		// check if we should add the intelligent fix treatment for the assets table
+		if ($this->addAssetsTableFix == 2)
+		{
+			// get the type we will convert to
+			$data_type = ($this->accessWorseCase > 64000) ? "MEDIUMTEXT" : "TEXT";
+			// the if statement about $rule_length
+			$codeIF = "\$rule_length <= " . $this->accessWorseCase;
+			// fix column size
+			$script   = array();
+			$script[] = $this->_t(5) . "//" . $this->setLine(__LINE__)
+				. " Fix the assets table rules column size";
+			$script[] = $this->_t(5)
+				. '$fix_rules_size = "ALTER TABLE `#__assets` CHANGE `rules` `rules` '
+				. $data_type
+				. ' NOT NULL COMMENT \'JSON encoded access control. Enlarged to ' . $data_type . ' by JCB\';";';
+			$script[] = $this->_t(5) . "\$db->setQuery(\$fix_rules_size);";
+			$script[] = $this->_t(5) . "\$db->execute();";
+			$codeA    = implode(PHP_EOL, $script);
+			// fixed message
+			$messageA = $this->_t(5)
+				. "\$app->enqueueMessage(JText::_('The <b>#__assets</b> table rules column was resized to the "
+				. $data_type
+				. " datatype for the components possible large permission rules.'));";
+			// do nothing
+			$codeB = "";
+			// fix not needed so ignore
+			$messageB = "";
+
+			// done
+			return $this->getAssetsTableIntelligentCode(
+				$codeIF, $codeA, $codeB, $messageA, $messageB, 2
+			);
+		}
+
+		return '';
+	}
+
+	/**
+	 * build code for the assets table script intelligent reversal
+	 *
+	 * @return  string The php to place in script.php
+	 *
+	 */
+	protected function getAssetsTableIntelligentUninstall()
+	{
+		// check if we should add the intelligent uninstall treatment for the assets table
+		if ($this->addAssetsTableFix == 2)
+		{
+			// the if statement about $rule_length
+			$codeIF = "\$rule_length < 5120";
+			// reverse column size
+			$script   = array();
+			$script[] = $this->_t(4) . "//" . $this->setLine(__LINE__)
+				. " Revert the assets table rules column back to the default";
+			$script[] = $this->_t(4)
+				. '$revert_rule = "ALTER TABLE `#__assets` CHANGE `rules` `rules` varchar(5120) NOT NULL COMMENT \'JSON encoded access control.\';";';
+			$script[] = $this->_t(4) . "\$db->setQuery(\$revert_rule);";
+			$script[] = $this->_t(4) . "\$db->execute();";
+			$codeA    = implode(PHP_EOL, $script);
+			// reverted message
+			$messageA = $this->_t(4)
+				. "\$app->enqueueMessage(JText::_('Reverted the <b>#__assets</b> table rules column back to its default size of varchar(5120)'));";
+			// do nothing
+			$codeB = "";
+			// not reverted message
+			$messageB = $this->_t(4)
+				. "\$app->enqueueMessage(JText::_('Could not revert the <b>#__assets</b> table rules column back to its default size of varchar(5120), since there is still one or more components that still requires the column to be larger.'));";
+
+			// done
+			return $this->getAssetsTableIntelligentCode(
+				$codeIF, $codeA, $codeB, $messageA, $messageB
+			);
+		}
+
+		return '';
+	}
+
+	/**
+	 * set code for both install, update and uninstall
+	 *
+	 * @param   string  $codeIF    The IF code to fix this issue
+	 * @param   string  $codeA     The a code to fix this issue
+	 * @param   string  $codeB     The b code to fix this issue
+	 * @param   string  $messageA  The fix a message
+	 * @param   string  $messageB  The fix b message
+	 *
+	 * @return  string
+	 *
+	 */
+	protected function getAssetsTableIntelligentCode($codeIF, $codeA, $codeB,
+		$messageA, $messageB, $tab = 1
+	) {
+		// reset script
+		$script   = array();
+		$script[] = $this->_t($tab) . $this->_t(1) . "//" . $this->setLine(
+				__LINE__
+			)
+			. " Get the biggest rule column in the assets table at this point.";
+		$script[] = $this->_t($tab) . $this->_t(1)
+			. '$get_rule_length = "SELECT CHAR_LENGTH(`rules`) as rule_size FROM #__assets ORDER BY rule_size DESC LIMIT 1";';
+		$script[] = $this->_t($tab) . $this->_t(1)
+			. "\$db->setQuery(\$get_rule_length);";
+		$script[] = $this->_t($tab) . $this->_t(1) . "if (\$db->execute())";
+		$script[] = $this->_t($tab) . $this->_t(1) . "{";
+		$script[] = $this->_t($tab) . $this->_t(2)
+			. "\$rule_length = \$db->loadResult();";
+		// https://github.com/joomla/joomla-cms/blob/3.10.0-alpha3/installation/sql/mysql/joomla.sql#L22
+		// Checked 1st December 2020 (let us know if this changes)
+		$script[] = $this->_t($tab) . $this->_t(2) . "//" . $this->setLine(
+				__LINE__
+			)
+			. " Check the size of the rules column";
+		$script[] = $this->_t($tab) . $this->_t(2) . "if (" . $codeIF . ")";
+		$script[] = $this->_t($tab) . $this->_t(2) . "{";
+		$script[] = $codeA;
+		$script[] = $messageA;
+		$script[] = $this->_t($tab) . $this->_t(2) . "}";
+		// only ad this if there is a B part
+		if (ComponentbuilderHelper::checkString($codeB)
+			|| ComponentbuilderHelper::checkString($messageB))
+		{
+			$script[] = $this->_t($tab) . $this->_t(2) . "else";
+			$script[] = $this->_t($tab) . $this->_t(2) . "{";
+			$script[] = $codeB;
+			$script[] = $messageB;
+			$script[] = $this->_t($tab) . $this->_t(2) . "}";
+		}
+		$script[] = $this->_t($tab) . $this->_t(1) . "}";
+
+		// done
+		return PHP_EOL . implode(PHP_EOL, $script);
 	}
 
 	public function setMoveFolderScript()
@@ -10509,27 +10612,67 @@ class Interpretation extends Fields
 				unset($this->customScriptBuilder['sql']);
 			}
 
+			// WHY DO WE NEED AN ASSET TABLE FIX?
+			// https://www.mysqltutorial.org/mysql-varchar/
+			// https://stackoverflow.com/a/15227917/1429677
+			// https://forums.mysql.com/read.php?24,105964,105964
+			// https://github.com/vdm-io/Joomla-Component-Builder/issues/616#issuecomment-741502980
+			// 30 actions each +-20 characters with 8 groups
+			// that makes 4800 characters and the current Joomla
+			// column size is varchar(5120)
+
+			// just a little event tracking in classes
+			// count actions = setAccessSections
+			//                 around line206 (infusion call)
+			//                 around line26454 (interpretation function)
+			// first fix = setInstall
+			//                 around line1600 (infusion call)
+			//                 around line10063 (interpretation function)
+			// second fix = setUninstallScript
+			//                 around line2161 (infusion call)
+			//                 around line8030 (interpretation function)
+
 			// check if this component needs larger rules
 			// also check if the developer will allow this
-			// TODO still adding to GUI the needed switches and code
-			if (1)
+			// the access actions length must be checked before this
+			// only add this option if set to SQL fix
+			if ($this->addAssetsTableFix == 1)
 			{
-				$db .= PHP_EOL;
-				$db .= PHP_EOL . '--';
-				$db .= PHP_EOL
-					. '--' . $this->setLine(
-						__LINE__
-					)
-					. ' Always insure this column rules is large enough for all the access control values.';
-				$db .= PHP_EOL . '--';
-				$db .= PHP_EOL
-					. "ALTER TABLE `#__assets` CHANGE `rules` `rules` MEDIUMTEXT NOT NULL COMMENT 'JSON encoded access control.';";
+				// 400 actions worse case is larger the 65535 characters
+				if ($this->accessSize > 400)
+				{
+					$db .= PHP_EOL;
+					$db .= PHP_EOL . '--';
+					$db .= PHP_EOL
+						. '--' . $this->setLine(
+							__LINE__
+						)
+						. ' Always insure this column rules is large enough for all the access control values.';
+					$db .= PHP_EOL . '--';
+					$db .= PHP_EOL
+						. "ALTER TABLE `#__assets` CHANGE `rules` `rules` MEDIUMTEXT NOT NULL COMMENT 'JSON encoded access control. Enlarged to MEDIUMTEXT by JCB';";
+				}
+				// smaller then 400 makes TEXT large enough
+				elseif ($this->addAssetsTableFix == 1)
+				{
+					$db .= PHP_EOL;
+					$db .= PHP_EOL . '--';
+					$db .= PHP_EOL
+						. '--' . $this->setLine(
+							__LINE__
+						)
+						. ' Always insure this column rules is large enough for all the access control values.';
+					$db .= PHP_EOL . '--';
+					$db .= PHP_EOL
+						. "ALTER TABLE `#__assets` CHANGE `rules` `rules` TEXT NOT NULL COMMENT 'JSON encoded access control. Enlarged to TEXT by JCB';";
+				}
 			}
 
 			// check if this component needs larger names
 			// also check if the developer will allow this
-			// TODO still adding to GUI the needed switches and code
-			if (1)
+			// the config length must be checked before this
+			// only add this option if set to SQL fix
+			if ($this->addAssetsTableFix && $this->addAssetsTableNameFix)
 			{
 				$db .= PHP_EOL;
 				$db .= PHP_EOL . '--';
@@ -10577,8 +10720,8 @@ class Interpretation extends Fields
 
 		// check if this component used larger rules
 		// now revert them back on uninstall
-		// TODO still adding to GUI the needed switches and code
-		if (1)
+		// only add this option if set to SQL fix
+		if ($this->addAssetsTableFix == 1)
 		{
 			// https://github.com/joomla/joomla-cms/blob/3.10.0-alpha3/installation/sql/mysql/joomla.sql#L22
 			// Checked 1st December 2020 (let us know if this changes)
@@ -10596,8 +10739,8 @@ class Interpretation extends Fields
 
 		// check if this component used larger names
 		// now revert them back on uninstall
-		// TODO still adding to GUI the needed switches and code
-		if (1)
+		// only add this option if set to SQL fix
+		if ($this->addAssetsTableFix == 1 && $this->addAssetsTableNameFix)
 		{
 			// https://github.com/joomla/joomla-cms/blob/3.10.0-alpha3/installation/sql/mysql/joomla.sql#L20
 			// Checked 1st December 2020 (let us know if this changes)
@@ -11995,7 +12138,7 @@ class Interpretation extends Fields
 
 		// build the body
 		$body = array();
-		// check if the filter type is sidebar
+		// check if the filter type is sidebar (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1)
 		{
@@ -12035,7 +12178,7 @@ class Interpretation extends Fields
 		$body[] = "<?php else : ?>";
 		$body[] = $this->_t(1) . "<div id=\"j-main-container\">";
 		$body[] = "<?php endif; ?>";
-		// check if the filter type is sidebar
+		// check if the filter type is sidebar (2 = topbar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 2)
 		{
@@ -12048,7 +12191,7 @@ class Interpretation extends Fields
 			$body[] = "?>";
 		}
 		$body[] = "<?php if (empty(\$this->items)): ?>";
-		// check if the filter type is sidebar
+		// check if the filter type is sidebar (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1)
 		{
@@ -12061,7 +12204,7 @@ class Interpretation extends Fields
 			. "<?php echo JText::_('JGLOBAL_NO_MATCHING_RESULTS'); ?>";
 		$body[] = $this->_t(1) . "</div>";
 		$body[] = "<?php else : ?>";
-		// check if the filter type is sidebar
+		// check if the filter type is sidebar (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1)
 		{
@@ -12095,7 +12238,7 @@ class Interpretation extends Fields
 		$body[] = $this->_t(3) . "\$this->loadTemplate('batch_body')";
 		$body[] = $this->_t(2) . "); ?>";
 		$body[] = $this->_t(1) . "<?php endif; ?>";
-		// check if the filter type is sidebar
+		// check if the filter type is sidebar (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1)
 		{
@@ -12135,7 +12278,7 @@ class Interpretation extends Fields
 			$jhtml_sort        = "grid.sort";
 			$jhtml_sort_icon   = "<i class=\"icon-menu-2\"></i>";
 			$jhtml_sort_icon_2 = "";
-			// for the new filter
+			// for the new filter (2 = topbar)
 			if (isset($this->adminFilterType[$nameListCode])
 				&& $this->adminFilterType[$nameListCode] == 2)
 			{
@@ -14317,11 +14460,14 @@ class Interpretation extends Fields
 				$Helper = $this->fileContentStatic[$this->hhh . 'Component'
 					. $this->hhh] . 'Helper';
 				// load the access filter query code
-				$query .= PHP_EOL . $this->_t(2) . "//" . $this->setLine(__LINE__)
+				$query .= PHP_EOL . $this->_t(2) . "//" . $this->setLine(
+						__LINE__
+					)
 					. " Filter by access level.";
 				$query .= PHP_EOL . $this->_t(2)
 					. "\$_access = \$this->getState('filter.access');";
-				$query .= PHP_EOL . $this->_t(2) . "if (\$_access && is_numeric(\$_access))";
+				$query .= PHP_EOL . $this->_t(2)
+					. "if (\$_access && is_numeric(\$_access))";
 				$query .= PHP_EOL . $this->_t(2) . "{";
 				$query .= PHP_EOL . $this->_t(3)
 					. "\$query->where('a.access = ' . (int) \$_access);";
@@ -14330,8 +14476,10 @@ class Interpretation extends Fields
 					. $Helper . "::checkArray(\$_access))";
 				$query .= PHP_EOL . $this->_t(2) . "{";
 				$query .= PHP_EOL . $this->_t(3) . "//"
-					. $this->setLine(__LINE__) . " Secure the array for the query";
-				$query .= PHP_EOL . $this->_t(3) . "\$_access = ArrayHelper::toInteger(\$_access);";
+					. $this->setLine(__LINE__)
+					. " Secure the array for the query";
+				$query .= PHP_EOL . $this->_t(3)
+					. "\$_access = ArrayHelper::toInteger(\$_access);";
 				$query .= PHP_EOL . $this->_t(3) . "//"
 					. $this->setLine(__LINE__) . " Filter by the Access Array.";
 				$query .= PHP_EOL . $this->_t(3)
@@ -14754,7 +14902,8 @@ class Interpretation extends Fields
 					. "\$pks = \$input->post->get('cid', array(), 'array');";
 				$method[] = $this->_t(3) . "//" . $this->setLine(__LINE__)
 					. " Sanitize the input";
-				$method[] = $this->_t(3) . "\$pks = ArrayHelper::toInteger(\$pks);";
+				$method[] = $this->_t(3)
+					. "\$pks = ArrayHelper::toInteger(\$pks);";
 				$method[] = $this->_t(3) . "//" . $this->setLine(__LINE__)
 					. " convert to string";
 				$method[] = $this->_t(3) . "\$ids = implode('_', \$pks);";
@@ -15443,11 +15592,14 @@ class Interpretation extends Fields
 				$Helper = $this->fileContentStatic[$this->hhh . 'Component'
 					. $this->hhh] . 'Helper';
 				// load the access filter query code
-				$query .= PHP_EOL . $this->_t(2) . "//" . $this->setLine(__LINE__)
+				$query .= PHP_EOL . $this->_t(2) . "//" . $this->setLine(
+						__LINE__
+					)
 					. " Filter by access level.";
 				$query .= PHP_EOL . $this->_t(2)
 					. "\$_access = \$this->getState('filter.access');";
-				$query .= PHP_EOL . $this->_t(2) . "if (\$_access && is_numeric(\$_access))";
+				$query .= PHP_EOL . $this->_t(2)
+					. "if (\$_access && is_numeric(\$_access))";
 				$query .= PHP_EOL . $this->_t(2) . "{";
 				$query .= PHP_EOL . $this->_t(3)
 					. "\$query->where('a.access = ' . (int) \$_access);";
@@ -15456,8 +15608,10 @@ class Interpretation extends Fields
 					. $Helper . "::checkArray(\$_access))";
 				$query .= PHP_EOL . $this->_t(2) . "{";
 				$query .= PHP_EOL . $this->_t(3) . "//"
-					. $this->setLine(__LINE__) . " Secure the array for the query";
-				$query .= PHP_EOL . $this->_t(3) . "\$_access = ArrayHelper::toInteger(\$_access);";
+					. $this->setLine(__LINE__)
+					. " Secure the array for the query";
+				$query .= PHP_EOL . $this->_t(3)
+					. "\$_access = ArrayHelper::toInteger(\$_access);";
 				$query .= PHP_EOL . $this->_t(3) . "//"
 					. $this->setLine(__LINE__) . " Filter by the Access Array.";
 				$query .= PHP_EOL . $this->_t(3)
@@ -15759,7 +15913,7 @@ class Interpretation extends Fields
 						. $this->setLine(__LINE__) . " Filter by "
 						. ucwords($filter['code']) . ".";
 					// we only add multi filter option if new filter type
-					// and we have multi filter set for this field
+					// and we have multi filter set for this field (2 = topbar)
 					if (isset($this->adminFilterType[$nameListCode])
 						&& $this->adminFilterType[$nameListCode] == 2
 						&& isset($filter['multi'])
@@ -17620,7 +17774,7 @@ class Interpretation extends Fields
 				$this->filterBuilder[$nameListCode]
 			))
 		{
-			// set the function or file path
+			// set the function or file path (2 = topbar)
 			$funtion_path = true;
 			if (isset($this->adminFilterType[$nameListCode])
 				&& $this->adminFilterType[$nameListCode] == 2)
@@ -17685,28 +17839,26 @@ class Interpretation extends Fields
 					$function[] = $this->_t(2) . "\$db->setQuery(\$query);";
 					$function[] = PHP_EOL . $this->_t(2)
 						. "\$results = \$db->loadObjectList();";
-					$function[] = $this->_t(2) . "if (\$results)";
-					$function[] = $this->_t(2) . "{";
-					$function[] = $this->_t(3) . "\$filter = array();";
-					$function[] = $this->_t(3) . "\$batch = array();";
+					$function[] = $this->_t(2) . "\$_filter = array();";
 					// if this is not a multi field
 					if (!$funtion_path && $filter['multi'] == 1)
 					{
-						$function[] = $this->_t(4)
-							. "\$filter[] = JHtml::_('select.option', '', '- Select ' . JText:"
+						$function[] = $this->_t(2)
+							. "\$_filter[] = JHtml::_('select.option', '', '- Select ' . JText:"
 							. ":_('" . $filter['lang'] . "') . ' -');";
 					}
+					$function[] = $this->_t(2) . "if (\$results)";
+					$function[] = $this->_t(2) . "{";
 					$function[] = $this->_t(3)
 						. "foreach (\$results as \$result)";
 					$function[] = $this->_t(3) . "{";
 					$function[] = $this->_t(4)
-						. "\$filter[] = JHtml::_('select.option', \$result->"
+						. "\$_filter[] = JHtml::_('select.option', \$result->"
 						. $filter['custom']['id'] . ", \$result->"
 						. $filter['custom']['text'] . ");";
 					$function[] = $this->_t(3) . "}";
-					$function[] = $this->_t(3) . "return  \$filter;";
 					$function[] = $this->_t(2) . "}";
-					$function[] = $this->_t(2) . "return false;";
+					$function[] = $this->_t(2) . "return  \$_filter;";
 					// add if this is a function path
 					if ($funtion_path)
 					{
@@ -17839,7 +17991,14 @@ class Interpretation extends Fields
 						$function[] = PHP_EOL . $this->_t(2)
 							. "\$results = \$db->loadColumn();";
 					}
-
+					$function[] = $this->_t(2) . "\$_filter = array();";
+					// if this is not a multi field
+					if (!$funtion_path && $filter['multi'] == 1)
+					{
+						$function[] = $this->_t(2)
+							. "\$_filter[] = JHtml::_('select.option', '', '- ' . JText:"
+							. ":_('" . $filter['lang_select'] . "') . ' -');";
+					}
 					$function[] = PHP_EOL . $this->_t(2) . "if (\$results)";
 					$function[] = $this->_t(2) . "{";
 
@@ -17866,14 +18025,6 @@ class Interpretation extends Fields
 					{
 						$function[] = $this->_t(3)
 							. "\$results = array_unique(\$results);";
-					}
-					$function[] = $this->_t(3) . "\$_filter = array();";
-					// if this is not a multi field
-					if (!$funtion_path && $filter['multi'] == 1)
-					{
-						$function[] = $this->_t(3)
-							. "\$_filter[] = JHtml::_('select.option', '', '- ' . JText:"
-							. ":_('" . $filter['lang_select'] . "') . ' -');";
 					}
 					$function[] = $this->_t(3) . "foreach (\$results as \$"
 						. $filter['code'] . ")";
@@ -17934,9 +18085,8 @@ class Interpretation extends Fields
 						}
 					}
 					$function[] = $this->_t(3) . "}";
-					$function[] = $this->_t(3) . "return \$_filter;";
 					$function[] = $this->_t(2) . "}";
-					$function[] = $this->_t(2) . "return false;";
+					$function[] = $this->_t(2) . "return \$_filter;";
 					// add if this is a function path
 					if ($funtion_path)
 					{
@@ -18074,7 +18224,7 @@ class Interpretation extends Fields
 		);
 		// add the category filter stuff
 		$this->setCategorySidebarFilterHelper($fieldFilters, $nameListCode);
-		// check if filter fields are added
+		// check if filter fields are added (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1
 			&& isset($this->filterBuilder[$nameListCode])
@@ -18242,7 +18392,7 @@ class Interpretation extends Fields
 	protected function setDefaultSidebarFilterHelper(&$filter, &$nameSingleCode,
 		&$nameListCode
 	) {
-		// add the default filters if we are on the old filter paths
+		// add the default filters if we are on the old filter paths (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1)
 		{
@@ -18290,7 +18440,7 @@ class Interpretation extends Fields
 	 */
 	protected function setCategorySidebarFilterHelper(&$filter, &$nameListCode)
 	{
-		// add the category filter if we are on the old filter paths
+		// add the category filter if we are on the old filter paths (1 = sidebar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 1
 			&& isset($this->categoryBuilder[$nameListCode])
@@ -18337,7 +18487,7 @@ class Interpretation extends Fields
 				$this->filterBuilder[$nameListCode]
 			))
 		{
-			// check if we should add some help to get the values
+			// check if we should add some help to get the values (2 = topbar)
 			$get_values = false;
 			if (isset($this->adminFilterType[$nameListCode])
 				&& $this->adminFilterType[$nameListCode] == 2)
@@ -20432,6 +20582,8 @@ class Interpretation extends Fields
 	 */
 	public function setStoredId(&$nameSingleCode, &$nameListCode)
 	{
+		// set component name
+		$Component = ucwords($this->componentCodeName);
 		// keep track of all fields already added
 		$donelist = array('id'         => true, 'search' => true,
 		                  'published'  => true, 'access' => true,
@@ -20442,22 +20594,47 @@ class Interpretation extends Fields
 			. "\$id .= ':' . \$this->getState('filter.id');";
 		$stored .= PHP_EOL . $this->_t(2)
 			. "\$id .= ':' . \$this->getState('filter.search');";
-		$stored .= PHP_EOL . $this->_t(2)
-			. "\$id .= ':' . \$this->getState('filter.published');";
+		// add this if not already added
+		if (!isset($this->fieldsNames[$nameSingleCode]['published']))
+		{
+			$stored .= PHP_EOL . $this->_t(2)
+				. "\$id .= ':' . \$this->getState('filter.published');";
+		}
+		// add if view calls for it, and not already added
 		if (isset($this->accessBuilder[$nameSingleCode])
 			&& ComponentbuilderHelper::checkString(
 				$this->accessBuilder[$nameSingleCode]
-			))
+			)
+			&& !isset($this->fieldsNames[$nameSingleCode]['access']))
 		{
-			$stored .= PHP_EOL . $this->_t(2)
-				. "\$id .= ':' . \$this->getState('filter.access');";
+			// the side bar option is single
+			if (isset($this->adminFilterType[$nameListCode])
+				&& $this->adminFilterType[$nameListCode] == 1)
+			{
+				$stored .= PHP_EOL . $this->_t(2)
+					. "\$id .= ':' . \$this->getState('filter.access');";
+			}
+			else
+			{
+				// top bar selection can result in
+				// an array due to multi selection
+				$stored .= $this->getStoredIdCodeMulti('access', $Component);
+			}
 		}
 		$stored .= PHP_EOL . $this->_t(2)
 			. "\$id .= ':' . \$this->getState('filter.ordering');";
-		$stored .= PHP_EOL . $this->_t(2)
-			. "\$id .= ':' . \$this->getState('filter.created_by');";
-		$stored .= PHP_EOL . $this->_t(2)
-			. "\$id .= ':' . \$this->getState('filter.modified_by');";
+		// add this if not already added
+		if (!isset($this->fieldsNames[$nameSingleCode]['created_by']))
+		{
+			$stored .= PHP_EOL . $this->_t(2)
+				. "\$id .= ':' . \$this->getState('filter.created_by');";
+		}
+		// add this if not already added
+		if (!isset($this->fieldsNames[$nameSingleCode]['modified_by']))
+		{
+			$stored .= PHP_EOL . $this->_t(2)
+				. "\$id .= ':' . \$this->getState('filter.modified_by');";
+		}
 		// add the rest of the set filters
 		if (isset($this->filterBuilder[$nameListCode])
 			&& ComponentbuilderHelper::checkArray(
@@ -20469,7 +20646,7 @@ class Interpretation extends Fields
 				if (!isset($donelist[$filter['code']]))
 				{
 					$stored                    .= $this->getStoredIdCode(
-						$filter
+						$filter, $nameListCode, $Component
 					);
 					$donelist[$filter['code']] = true;
 				}
@@ -20486,7 +20663,7 @@ class Interpretation extends Fields
 				if (!isset($donelist[$filter['code']]))
 				{
 					$stored                    .= $this->getStoredIdCode(
-						$filter
+						$filter, $nameListCode, $Component
 					);
 					$donelist[$filter['code']] = true;
 				}
@@ -20499,32 +20676,111 @@ class Interpretation extends Fields
 	/**
 	 * Add the code of the stored ids
 	 *
-	 * @param   array  $filter  The field/filter array
+	 * @param   array   $filter        The field/filter array
+	 * @param   string  $nameListCode  The list view name
+	 * @param   string  $Component     The Component name
 	 *
 	 * @return  string    The code for the stored IDs
 	 *
 	 */
-	protected function getStoredIdCode(&$filter)
+	protected function getStoredIdCode(&$filter, &$nameListCode, &$Component)
 	{
 		if ($filter['type'] === 'category')
 		{
-			$stored = PHP_EOL . $this->_t(2)
-				. "\$id .= ':' . \$this->getState('filter.category');";
-			$stored .= PHP_EOL . $this->_t(2)
-				. "\$id .= ':' . \$this->getState('filter.category_id');";
-			if ($filter['code'] != 'category')
+			// the side bar option is single (1 = sidebar)
+			if (isset($this->adminFilterType[$nameListCode])
+				&& $this->adminFilterType[$nameListCode] == 1)
 			{
+				$stored = PHP_EOL . $this->_t(2)
+					. "\$id .= ':' . \$this->getState('filter.category');";
 				$stored .= PHP_EOL . $this->_t(2)
-					. "\$id .= ':' . \$this->getState('filter."
-					. $filter['code'] . "');";
+					. "\$id .= ':' . \$this->getState('filter.category_id');";
+				if ($filter['code'] != 'category')
+				{
+					$stored .= PHP_EOL . $this->_t(2)
+						. "\$id .= ':' . \$this->getState('filter."
+						. $filter['code'] . "');";
+				}
+			}
+			else
+			{
+				$stored = $this->getStoredIdCodeMulti('category', $Component);
+				$stored .= $this->getStoredIdCodeMulti(
+					'category_id', $Component
+				);
+				if ($filter['code'] != 'category')
+				{
+					$stored .= $this->getStoredIdCodeMulti(
+						$filter['code'], $Component
+					);
+				}
 			}
 		}
 		else
 		{
-			$stored = PHP_EOL . $this->_t(2)
-				. "\$id .= ':' . \$this->getState('filter."
-				. $filter['code'] . "');";
+			// check if this is the topbar filter, and multi option (2 = topbar)
+			if ($filter['multi'] == 2
+				&& isset($this->adminFilterType[$nameListCode])
+				&& $this->adminFilterType[$nameListCode] == 2)
+			{
+				// top bar selection can result in
+				// an array due to multi selection
+				$stored = $this->getStoredIdCodeMulti(
+					$filter['code'], $Component
+				);
+			}
+			else
+			{
+				$stored = PHP_EOL . $this->_t(2)
+					. "\$id .= ':' . \$this->getState('filter."
+					. $filter['code'] . "');";
+			}
 		}
+
+		return $stored;
+	}
+
+	/**
+	 * Add the code of the stored multi ids
+	 *
+	 * @param   string  $key        The key field name
+	 * @param   string  $Component  The Component name
+	 *
+	 * @return  string    The code for the stored IDs
+	 *
+	 */
+	protected function getStoredIdCodeMulti($key, &$Component)
+	{
+		// top bar selection can result in
+		// an array due to multi selection
+		$stored = PHP_EOL . $this->_t(2)
+			. "//" . $this->setLine(__LINE__)
+			. " Check if the value is an array";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "\$_" . $key . " = \$this->getState('filter."
+			. $key . "');";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "if (" . $Component . "Helper::checkArray(\$_"
+			. $key . "))";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "{";
+		$stored .= PHP_EOL . $this->_t(3)
+			. "\$id .= ':' . implode(':', \$_" . $key . ");";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "}";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "//" . $this->setLine(__LINE__)
+			. " Check if this is only an number or string";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "elseif (is_numeric(\$_" . $key . ")";
+		$stored .= PHP_EOL . $this->_t(2)
+			. " || " . $Component . "Helper::checkString(\$_" . $key . "))";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "{";
+		$stored .= PHP_EOL . $this->_t(3)
+			. "\$id .= ':' . \$_" . $key . ";";
+		$stored .= PHP_EOL . $this->_t(2)
+			. "}";
 
 		return $stored;
 	}
@@ -20868,7 +21124,7 @@ class Interpretation extends Fields
 		$state = '';
 		// keep track of all fields already added
 		$donelist = array();
-		// we must add the formSubmited code if new above filters is used
+		// we must add the formSubmited code if new above filters is used (2 = topbar)
 		$new_filter = false;
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 2)
@@ -20922,9 +21178,9 @@ class Interpretation extends Fields
 	/**
 	 * Add the code of the filter in the populate state
 	 *
-	 * @param   array   $filter      The field/filter array
+	 * @param   array   $filter     The field/filter array
 	 * @param   bool    $newFilter  The switch to use the new filter
-	 * @param   string  $extra       The defaults/extra options of the filter
+	 * @param   string  $extra      The defaults/extra options of the filter
 	 *
 	 * @return  string    The code for the populate state
 	 *
@@ -20978,7 +21234,7 @@ class Interpretation extends Fields
 	 * set the default populate state code
 	 *
 	 * @param   string  $nameSingleCode  The single view name
-	 * @param   bool    $newFilter      The switch to use the new filter
+	 * @param   bool    $newFilter       The switch to use the new filter
 	 *
 	 * @return  string The state code added
 	 *
@@ -21938,7 +22194,7 @@ class Interpretation extends Fields
 	 */
 	protected function setChosenMultiSelectionHeaders(&$headers, $nameListCode)
 	{
-		// check that the filter type is the new filter option
+		// check that the filter type is the new filter option (2 = topbar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 2)
 		{
@@ -26442,6 +26698,8 @@ function vdm_dkim() {
 
 	public function setAccessSections()
 	{
+		// access size counter
+		$this->accessSize = 12; // ;)
 		// set the default component access values
 		$this->componentHead   = array();
 		$this->componentGlobal = array();
@@ -26476,7 +26734,8 @@ function vdm_dkim() {
 			$this->componentHead[] = $this->_t(2)
 				. '<action name="core.export" title="' . $exportTitle
 				. '" description="' . $exportDesc . '" />';
-
+			// the size needs increase
+			$this->accessSize++;
 			$importTitle = $this->langPrefix . '_'
 				. ComponentbuilderHelper::safeString('Import Data', 'U');
 			$importDesc  = $this->langPrefix . '_'
@@ -26490,6 +26749,8 @@ function vdm_dkim() {
 			$this->componentHead[] = $this->_t(2)
 				. '<action name="core.import" title="' . $importTitle
 				. '" description="' . $importDesc . '" />';
+			// the size needs increase
+			$this->accessSize++;
 		}
 		// version permission
 		$batchTitle = $this->langPrefix . '_'
@@ -26534,6 +26795,8 @@ function vdm_dkim() {
 		{
 			$this->componentHead[] = $this->_t(2)
 				. '    <action name="core.edit.value" title="JACTION_EDITVALUE" description="JACTION_EDITVALUE_COMPONENT_DESC" />';
+			// the size needs increase
+			$this->accessSize++;
 		}
 		// new custom created by permissions
 		$created_byTitle = $this->langPrefix . '_'
@@ -26604,6 +26867,8 @@ function vdm_dkim() {
 					. '<action name="' . $customAdminCode . '.access" title="'
 					. $customAdminTitle . '" description="' . $customAdminDesc
 					. '" />';
+				// the size needs increase
+				$this->accessSize++;
 				// add the custom permissions to use the buttons of this view
 				$this->addCustomButtonPermissions(
 					$custom_admin_view['settings'], $customAdminName,
@@ -26687,7 +26952,8 @@ function vdm_dkim() {
 					$this->componentGlobal[$sortKey] = $this->_t(2)
 						. '<action name="site.' . $siteCode . '.access" title="'
 						. $siteTitle . '" description="' . $siteDesc . '" />';
-
+					// the size needs increase
+					$this->accessSize++;
 					// check if this site view requires access rule to default to public
 					if (isset($site_view['public_access'])
 						&& $site_view['public_access'] == 1)
@@ -26735,6 +27001,8 @@ function vdm_dkim() {
 								. $_customTab['lang_permission']
 								. '" description="'
 								. $_customTab['lang_permission_desc'] . '" />';
+							// the size needs increase
+							$this->accessSize++;
 						}
 					}
 				}
@@ -26901,12 +27169,31 @@ function vdm_dkim() {
 			// add global to the compnent section
 			$component .= PHP_EOL . implode(PHP_EOL, $this->componentGlobal)
 				. PHP_EOL . $this->_t(1) . "</section>";
-			// add views to the compnent section
+			// add views to the component section
 			$component .= PHP_EOL . implode(PHP_EOL, $componentViews);
 			// be sure to reset again. (memory)
 			$this->componentHead   = null;
 			$this->componentGlobal = null;
 			$this->permissionViews = null;
+
+			// remove the fix, is not needed
+			if ($this->accessSize < 30)
+			{
+				// since we have less than 30 actions
+				// we do not need the fix for this component
+				$this->addAssetsTableFix = 0;
+			}
+			else
+			{
+				// get the worse case column size required (can be worse I know)
+				// access/action size x 20 characters x 8 groups
+				$character_length = (int) ComponentbuilderHelper::bcmath(
+					'mul', $this->accessSize, 20, 0
+				);
+				$this->accessWorseCase = (int) ComponentbuilderHelper::bcmath(
+					'mul', $character_length, 8, 0
+				);
+			}
 
 			// return the build
 			return $component;
@@ -26954,6 +27241,8 @@ function vdm_dkim() {
 					. '<action name="' . $code . '.' . $customButtonCode
 					. '" title="' . $customButtonTitle . '" description="'
 					. $customButtonDesc . '" />';
+				// the size needs increase
+				$this->accessSize++;
 			}
 		}
 	}
@@ -27292,6 +27581,8 @@ function vdm_dkim() {
 					$this->componentGlobal[$sortKey] = $this->_t(2)
 						. '<action name="' . $action . '" title="' . $title
 						. '" description="' . $title . '_DESC" />';
+					// the size needs increase
+					$this->accessSize++;
 					// build permission switch
 					$this->permissionBuilder['global'][$action][$nameView]
 						= $nameView;
@@ -27340,6 +27631,8 @@ function vdm_dkim() {
 					$this->componentGlobal[$sortKey] = $this->_t(2)
 						. '<action name="' . $action . '" title="' . $title
 						. '" description="' . $title . '_DESC" />';
+					// the size needs increase
+					$this->accessSize++;
 					// build permission switch
 					$this->permissionBuilder['global'][$action][$nameView]
 						= $nameView;
@@ -27433,7 +27726,7 @@ function vdm_dkim() {
 		$default = PHP_EOL . $module->default_header . PHP_EOL . '?>';
 		// add any css from the fields
 		$default .= $this->getCustomScriptBuilder(
-			'css_views', $key, PHP_EOL . '<style>' . PHP_EOL, '', true, null,
+			'css_views', $key, PHP_EOL . '<style>', '', true, null,
 			PHP_EOL . '</style>' . PHP_EOL
 		);
 		// now add the body
@@ -27441,7 +27734,7 @@ function vdm_dkim() {
 		// add any JavaScript from the fields
 		$default .= $this->getCustomScriptBuilder(
 			'views_footer', $key,
-			PHP_EOL . '<script type="text/javascript">' . PHP_EOL, '', true,
+			PHP_EOL . '<script type="text/javascript">', '', true,
 			null, PHP_EOL . '</script>' . PHP_EOL
 		);
 
@@ -27532,6 +27825,7 @@ function vdm_dkim() {
 				$module->config_fields
 			))
 		{
+			$add_scripts_field = true;
 			foreach ($module->config_fields as $field_name => $fieldsets)
 			{
 				foreach ($fieldsets as $fieldset => $fields)
@@ -27540,6 +27834,15 @@ function vdm_dkim() {
 					$xmlFields = $this->getExtensionFieldsetXML(
 						$module, $fields, $dbkey
 					);
+					// check if the custom script field must be set
+					if ($add_scripts_field && $module->add_scripts_field)
+					{
+						// get the custom script field
+						$xmlFields .= PHP_EOL . $this->_t(2)
+							. "<field type=\"modadminvvvvvvvdm\" />";
+						// don't add it again
+						$add_scripts_field = false;
+					}
 					// make sure the xml is set and a string
 					if (isset($xmlFields)
 						&& ComponentbuilderHelper::checkString($xmlFields))
@@ -27676,7 +27979,7 @@ function vdm_dkim() {
 			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
 			$xml .= PHP_EOL . $this->_t(3)
 				. '<file driver="mysql" charset="utf8">sql/mysql/install.sql</file>';
-			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
+			$xml .= PHP_EOL . $this->_t(2) . '</sql>';
 			$xml .= PHP_EOL . $this->_t(1) . '</install>';
 		}
 		// should the sql uninstall be added
@@ -27689,7 +27992,7 @@ function vdm_dkim() {
 			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
 			$xml .= PHP_EOL . $this->_t(3)
 				. '<file driver="mysql" charset="utf8">sql/mysql/uninstall.sql</file>';
-			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
+			$xml .= PHP_EOL . $this->_t(2) . '</sql>';
 			$xml .= PHP_EOL . $this->_t(1) . '</uninstall>';
 		}
 		// should the language xml be added
@@ -28037,7 +28340,7 @@ function vdm_dkim() {
 			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
 			$xml .= PHP_EOL . $this->_t(3)
 				. '<file driver="mysql" charset="utf8">sql/mysql/install.sql</file>';
-			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
+			$xml .= PHP_EOL . $this->_t(2) . '</sql>';
 			$xml .= PHP_EOL . $this->_t(1) . '</install>';
 		}
 		// should the sql uninstall be added
@@ -28050,7 +28353,7 @@ function vdm_dkim() {
 			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
 			$xml .= PHP_EOL . $this->_t(3)
 				. '<file driver="mysql" charset="utf8">sql/mysql/uninstall.sql</file>';
-			$xml .= PHP_EOL . $this->_t(2) . '<sql>';
+			$xml .= PHP_EOL . $this->_t(2) . '</sql>';
 			$xml .= PHP_EOL . $this->_t(1) . '</uninstall>';
 		}
 		// should the language xml be added
