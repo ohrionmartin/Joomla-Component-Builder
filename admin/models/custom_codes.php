@@ -26,24 +26,31 @@ class ComponentbuilderModelCustom_codes extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
-				'g.system_name',
-				'a.path','path',
+				'g.system_name','component',
 				'a.target','target',
 				'a.type','type',
-				'a.comment_type','comment_type'
+				'a.comment_type','comment_type',
+				'a.path','path'
 			);
 		}
 
 		parent::__construct($config);
 	}
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -54,38 +61,66 @@ class ComponentbuilderModelCustom_codes extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$component = $this->getUserStateFromRequest($this->context . '.filter.component', 'filter_component');
-		$this->setState('filter.component', $component);
 
-		$path = $this->getUserStateFromRequest($this->context . '.filter.path', 'filter_path');
-		$this->setState('filter.path', $path);
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
 
-		$target = $this->getUserStateFromRequest($this->context . '.filter.target', 'filter_target');
-		$this->setState('filter.target', $target);
-
-		$type = $this->getUserStateFromRequest($this->context . '.filter.type', 'filter_type');
-		$this->setState('filter.type', $type);
-
-		$comment_type = $this->getUserStateFromRequest($this->context . '.filter.comment_type', 'filter_comment_type');
-		$this->setState('filter.comment_type', $comment_type);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
-        
+
 		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
 		$this->setState('filter.created_by', $created_by);
 
 		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
 		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
+
+		$component = $this->getUserStateFromRequest($this->context . '.filter.component', 'filter_component');
+		if ($formSubmited)
+		{
+			$component = $app->input->post->get('component');
+			$this->setState('filter.component', $component);
+		}
+
+		$target = $this->getUserStateFromRequest($this->context . '.filter.target', 'filter_target');
+		if ($formSubmited)
+		{
+			$target = $app->input->post->get('target');
+			$this->setState('filter.target', $target);
+		}
+
+		$type = $this->getUserStateFromRequest($this->context . '.filter.type', 'filter_type');
+		if ($formSubmited)
+		{
+			$type = $app->input->post->get('type');
+			$this->setState('filter.type', $type);
+		}
+
+		$comment_type = $this->getUserStateFromRequest($this->context . '.filter.comment_type', 'filter_comment_type');
+		if ($formSubmited)
+		{
+			$comment_type = $app->input->post->get('comment_type');
+			$this->setState('filter.comment_type', $comment_type);
+		}
+
+		$path = $this->getUserStateFromRequest($this->context . '.filter.path', 'filter_path');
+		if ($formSubmited)
+		{
+			$path = $app->input->post->get('path');
+			$this->setState('filter.path', $path);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -248,9 +283,17 @@ class ComponentbuilderModelCustom_codes extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -273,25 +316,73 @@ class ComponentbuilderModelCustom_codes extends JModelList
 			}
 		}
 
-		// Filter by component.
-		if ($component = $this->getState('filter.component'))
+		// Filter by Component.
+		$_component = $this->getState('filter.component');
+		if (is_numeric($_component))
 		{
-			$query->where('a.component = ' . $db->quote($db->escape($component)));
+			if (is_float($_component))
+			{
+				$query->where('a.component = ' . (float) $_component);
+			}
+			else
+			{
+				$query->where('a.component = ' . (int) $_component);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_component))
+		{
+			$query->where('a.component = ' . $db->quote($db->escape($_component)));
 		}
 		// Filter by Target.
-		if ($target = $this->getState('filter.target'))
+		$_target = $this->getState('filter.target');
+		if (is_numeric($_target))
 		{
-			$query->where('a.target = ' . $db->quote($db->escape($target)));
+			if (is_float($_target))
+			{
+				$query->where('a.target = ' . (float) $_target);
+			}
+			else
+			{
+				$query->where('a.target = ' . (int) $_target);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_target))
+		{
+			$query->where('a.target = ' . $db->quote($db->escape($_target)));
 		}
 		// Filter by Type.
-		if ($type = $this->getState('filter.type'))
+		$_type = $this->getState('filter.type');
+		if (is_numeric($_type))
 		{
-			$query->where('a.type = ' . $db->quote($db->escape($type)));
+			if (is_float($_type))
+			{
+				$query->where('a.type = ' . (float) $_type);
+			}
+			else
+			{
+				$query->where('a.type = ' . (int) $_type);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_type))
+		{
+			$query->where('a.type = ' . $db->quote($db->escape($_type)));
 		}
 		// Filter by Comment_type.
-		if ($comment_type = $this->getState('filter.comment_type'))
+		$_comment_type = $this->getState('filter.comment_type');
+		if (is_numeric($_comment_type))
 		{
-			$query->where('a.comment_type = ' . $db->quote($db->escape($comment_type)));
+			if (is_float($_comment_type))
+			{
+				$query->where('a.comment_type = ' . (float) $_comment_type);
+			}
+			else
+			{
+				$query->where('a.comment_type = ' . (int) $_comment_type);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_comment_type))
+		{
+			$query->where('a.comment_type = ' . $db->quote($db->escape($_comment_type)));
 		}
 
 		// Add the list ordering clause.
@@ -458,14 +549,26 @@ class ComponentbuilderModelCustom_codes extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
 		$id .= ':' . $this->getState('filter.component');
-		$id .= ':' . $this->getState('filter.path');
 		$id .= ':' . $this->getState('filter.target');
 		$id .= ':' . $this->getState('filter.type');
 		$id .= ':' . $this->getState('filter.comment_type');
+		$id .= ':' . $this->getState('filter.path');
 
 		return parent::getStoreId($id);
 	}

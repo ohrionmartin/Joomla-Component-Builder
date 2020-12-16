@@ -26,25 +26,32 @@ class ComponentbuilderModelCustom_admin_views extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
+				'g.name','main_get',
+				'a.add_php_ajax','add_php_ajax',
+				'a.add_custom_button','add_custom_button',
 				'a.system_name','system_name',
 				'a.name','name',
-				'a.description','description',
-				'g.name',
-				'a.add_php_ajax','add_php_ajax',
-				'a.add_custom_button','add_custom_button'
+				'a.description','description'
 			);
 		}
 
 		parent::__construct($config);
 	}
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -55,41 +62,73 @@ class ComponentbuilderModelCustom_admin_views extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
-		$this->setState('filter.system_name', $system_name);
 
-		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
-		$this->setState('filter.name', $name);
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
 
-		$description = $this->getUserStateFromRequest($this->context . '.filter.description', 'filter_description');
-		$this->setState('filter.description', $description);
-
-		$main_get = $this->getUserStateFromRequest($this->context . '.filter.main_get', 'filter_main_get');
-		$this->setState('filter.main_get', $main_get);
-
-		$add_php_ajax = $this->getUserStateFromRequest($this->context . '.filter.add_php_ajax', 'filter_add_php_ajax');
-		$this->setState('filter.add_php_ajax', $add_php_ajax);
-
-		$add_custom_button = $this->getUserStateFromRequest($this->context . '.filter.add_custom_button', 'filter_add_custom_button');
-		$this->setState('filter.add_custom_button', $add_custom_button);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
-        
+
 		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
 		$this->setState('filter.created_by', $created_by);
 
 		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
 		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
+
+		$main_get = $this->getUserStateFromRequest($this->context . '.filter.main_get', 'filter_main_get');
+		if ($formSubmited)
+		{
+			$main_get = $app->input->post->get('main_get');
+			$this->setState('filter.main_get', $main_get);
+		}
+
+		$add_php_ajax = $this->getUserStateFromRequest($this->context . '.filter.add_php_ajax', 'filter_add_php_ajax');
+		if ($formSubmited)
+		{
+			$add_php_ajax = $app->input->post->get('add_php_ajax');
+			$this->setState('filter.add_php_ajax', $add_php_ajax);
+		}
+
+		$add_custom_button = $this->getUserStateFromRequest($this->context . '.filter.add_custom_button', 'filter_add_custom_button');
+		if ($formSubmited)
+		{
+			$add_custom_button = $app->input->post->get('add_custom_button');
+			$this->setState('filter.add_custom_button', $add_custom_button);
+		}
+
+		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
+		if ($formSubmited)
+		{
+			$system_name = $app->input->post->get('system_name');
+			$this->setState('filter.system_name', $system_name);
+		}
+
+		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
+		if ($formSubmited)
+		{
+			$name = $app->input->post->get('name');
+			$this->setState('filter.name', $name);
+		}
+
+		$description = $this->getUserStateFromRequest($this->context . '.filter.description', 'filter_description');
+		if ($formSubmited)
+		{
+			$description = $app->input->post->get('description');
+			$this->setState('filter.description', $description);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -220,9 +259,17 @@ class ComponentbuilderModelCustom_admin_views extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -245,20 +292,56 @@ class ComponentbuilderModelCustom_admin_views extends JModelList
 			}
 		}
 
-		// Filter by main_get.
-		if ($main_get = $this->getState('filter.main_get'))
+		// Filter by Main_get.
+		$_main_get = $this->getState('filter.main_get');
+		if (is_numeric($_main_get))
 		{
-			$query->where('a.main_get = ' . $db->quote($db->escape($main_get)));
+			if (is_float($_main_get))
+			{
+				$query->where('a.main_get = ' . (float) $_main_get);
+			}
+			else
+			{
+				$query->where('a.main_get = ' . (int) $_main_get);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_main_get))
+		{
+			$query->where('a.main_get = ' . $db->quote($db->escape($_main_get)));
 		}
 		// Filter by Add_php_ajax.
-		if ($add_php_ajax = $this->getState('filter.add_php_ajax'))
+		$_add_php_ajax = $this->getState('filter.add_php_ajax');
+		if (is_numeric($_add_php_ajax))
 		{
-			$query->where('a.add_php_ajax = ' . $db->quote($db->escape($add_php_ajax)));
+			if (is_float($_add_php_ajax))
+			{
+				$query->where('a.add_php_ajax = ' . (float) $_add_php_ajax);
+			}
+			else
+			{
+				$query->where('a.add_php_ajax = ' . (int) $_add_php_ajax);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_add_php_ajax))
+		{
+			$query->where('a.add_php_ajax = ' . $db->quote($db->escape($_add_php_ajax)));
 		}
 		// Filter by Add_custom_button.
-		if ($add_custom_button = $this->getState('filter.add_custom_button'))
+		$_add_custom_button = $this->getState('filter.add_custom_button');
+		if (is_numeric($_add_custom_button))
 		{
-			$query->where('a.add_custom_button = ' . $db->quote($db->escape($add_custom_button)));
+			if (is_float($_add_custom_button))
+			{
+				$query->where('a.add_custom_button = ' . (float) $_add_custom_button);
+			}
+			else
+			{
+				$query->where('a.add_custom_button = ' . (int) $_add_custom_button);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_add_custom_button))
+		{
+			$query->where('a.add_custom_button = ' . $db->quote($db->escape($_add_custom_button)));
 		}
 
 		// Add the list ordering clause.
@@ -430,15 +513,27 @@ class ComponentbuilderModelCustom_admin_views extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
-		$id .= ':' . $this->getState('filter.system_name');
-		$id .= ':' . $this->getState('filter.name');
-		$id .= ':' . $this->getState('filter.description');
 		$id .= ':' . $this->getState('filter.main_get');
 		$id .= ':' . $this->getState('filter.add_php_ajax');
 		$id .= ':' . $this->getState('filter.add_custom_button');
+		$id .= ':' . $this->getState('filter.system_name');
+		$id .= ':' . $this->getState('filter.name');
+		$id .= ':' . $this->getState('filter.description');
 
 		return parent::getStoreId($id);
 	}

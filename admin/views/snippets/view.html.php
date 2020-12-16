@@ -34,10 +34,14 @@ class ComponentbuilderViewSnippets extends JViewLegacy
 		$this->pagination = $this->get('Pagination');
 		$this->state = $this->get('State');
 		$this->user = JFactory::getUser();
+		// Load the filter form from xml.
+		$this->filterForm = $this->get('FilterForm');
+		// Load the active filters.
+		$this->activeFilters = $this->get('ActiveFilters');
 		// Add the list ordering clause.
 		$this->listOrder = $this->escape($this->state->get('list.ordering', 'a.id'));
 		$this->listDirn = $this->escape($this->state->get('list.direction', 'desc'));
-		$this->saveOrder = $this->listOrder == 'ordering';
+		$this->saveOrder = $this->listOrder == 'a.ordering';
 		// set the return here value
 		$this->return_here = urlencode(base64_encode((string) JUri::getInstance()));
 		// get global action permissions
@@ -164,30 +168,17 @@ class ComponentbuilderViewSnippets extends JViewLegacy
 			JToolBarHelper::preferences('com_componentbuilder');
 		}
 
-		if ($this->canState)
+		// Only load published batch if state and batch is allowed
+		if ($this->canState && $this->canBatch)
 		{
-			JHtmlSidebar::addFilter(
-				JText::_('JOPTION_SELECT_PUBLISHED'),
-				'filter_published',
-				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions'), 'value', 'text', $this->state->get('filter.published'), true)
+			JHtmlBatch_::addListSelection(
+				JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
+				'batch[published]',
+				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
 			);
-			// only load if batch allowed
-			if ($this->canBatch)
-			{
-				JHtmlBatch_::addListSelection(
-					JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
-					'batch[published]',
-					JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
-				);
-			}
 		}
 
-		JHtmlSidebar::addFilter(
-			JText::_('JOPTION_SELECT_ACCESS'),
-			'filter_access',
-			JHtml::_('select.options', JHtml::_('access.assetgroups'), 'value', 'text', $this->state->get('filter.access'))
-		);
-
+		// Only load access batch if create, edit and batch is allowed
 		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
 			JHtmlBatch_::addListSelection(
@@ -197,64 +188,44 @@ class ComponentbuilderViewSnippets extends JViewLegacy
 			);
 		}
 
-		// Set Type Name Selection
-		$this->typeNameOptions = JFormHelper::loadFieldType('Snippettype')->options;
-		// We do some sanitation for Type Name filter
-		if (ComponentbuilderHelper::checkArray($this->typeNameOptions) &&
-			isset($this->typeNameOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->typeNameOptions[0]->value))
+		// Only load Type Name batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
-			unset($this->typeNameOptions[0]);
-		}
-		// Only load Type Name filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->typeNameOptions))
-		{
-			// Type Name Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_SNIPPET_TYPE_LABEL').' -',
-				'filter_type',
-				JHtml::_('select.options', $this->typeNameOptions, 'value', 'text', $this->state->get('filter.type'))
-			);
-
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+			// Set Type Name Selection
+			$this->typeNameOptions = JFormHelper::loadFieldType('Snippettype')->options;
+			// We do some sanitation for Type Name filter
+			if (ComponentbuilderHelper::checkArray($this->typeNameOptions) &&
+				isset($this->typeNameOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->typeNameOptions[0]->value))
 			{
-				// Type Name Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_SNIPPET_TYPE_LABEL').' -',
-					'batch[type]',
-					JHtml::_('select.options', $this->typeNameOptions, 'value', 'text')
-				);
+				unset($this->typeNameOptions[0]);
 			}
-		}
-
-		// Set Library Name Selection
-		$this->libraryNameOptions = JFormHelper::loadFieldType('Library')->options;
-		// We do some sanitation for Library Name filter
-		if (ComponentbuilderHelper::checkArray($this->libraryNameOptions) &&
-			isset($this->libraryNameOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->libraryNameOptions[0]->value))
-		{
-			unset($this->libraryNameOptions[0]);
-		}
-		// Only load Library Name filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->libraryNameOptions))
-		{
-			// Library Name Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_SNIPPET_LIBRARY_LABEL').' -',
-				'filter_library',
-				JHtml::_('select.options', $this->libraryNameOptions, 'value', 'text', $this->state->get('filter.library'))
+			// Type Name Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_SNIPPET_TYPE_LABEL').' -',
+				'batch[type]',
+				JHtml::_('select.options', $this->typeNameOptions, 'value', 'text')
 			);
+		}
 
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+		// Only load Library Name batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
+		{
+			// Set Library Name Selection
+			$this->libraryNameOptions = JFormHelper::loadFieldType('Library')->options;
+			// We do some sanitation for Library Name filter
+			if (ComponentbuilderHelper::checkArray($this->libraryNameOptions) &&
+				isset($this->libraryNameOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->libraryNameOptions[0]->value))
 			{
-				// Library Name Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_SNIPPET_LIBRARY_LABEL').' -',
-					'batch[library]',
-					JHtml::_('select.options', $this->libraryNameOptions, 'value', 'text')
-				);
+				unset($this->libraryNameOptions[0]);
 			}
+			// Library Name Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_SNIPPET_LIBRARY_LABEL').' -',
+				'batch[library]',
+				JHtml::_('select.options', $this->libraryNameOptions, 'value', 'text')
+			);
 		}
 	}
 
@@ -299,7 +270,7 @@ class ComponentbuilderViewSnippets extends JViewLegacy
 	protected function getSortFields()
 	{
 		return array(
-			'ordering' => JText::_('JGRID_HEADING_ORDERING'),
+			'a.ordering' => JText::_('JGRID_HEADING_ORDERING'),
 			'a.published' => JText::_('JSTATUS'),
 			'a.name' => JText::_('COM_COMPONENTBUILDER_SNIPPET_NAME_LABEL'),
 			'a.url' => JText::_('COM_COMPONENTBUILDER_SNIPPET_URL_LABEL'),

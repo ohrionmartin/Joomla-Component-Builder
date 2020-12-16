@@ -26,14 +26,15 @@ class ComponentbuilderModelJoomla_components extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
+				'a.companyname','companyname',
+				'a.author','author',
 				'a.system_name','system_name',
 				'a.name_code','name_code',
-				'a.short_description','short_description',
-				'a.companyname','companyname',
-				'a.author','author'
+				'a.short_description','short_description'
 			);
 		}
 
@@ -2075,11 +2076,17 @@ class ComponentbuilderModelJoomla_components extends JModelList
 		return false;
 	}
 
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -2090,38 +2097,66 @@ class ComponentbuilderModelJoomla_components extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
-		$this->setState('filter.system_name', $system_name);
 
-		$name_code = $this->getUserStateFromRequest($this->context . '.filter.name_code', 'filter_name_code');
-		$this->setState('filter.name_code', $name_code);
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
 
-		$short_description = $this->getUserStateFromRequest($this->context . '.filter.short_description', 'filter_short_description');
-		$this->setState('filter.short_description', $short_description);
-
-		$companyname = $this->getUserStateFromRequest($this->context . '.filter.companyname', 'filter_companyname');
-		$this->setState('filter.companyname', $companyname);
-
-		$author = $this->getUserStateFromRequest($this->context . '.filter.author', 'filter_author');
-		$this->setState('filter.author', $author);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
-        
+
 		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
 		$this->setState('filter.created_by', $created_by);
 
 		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
 		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
+
+		$companyname = $this->getUserStateFromRequest($this->context . '.filter.companyname', 'filter_companyname');
+		if ($formSubmited)
+		{
+			$companyname = $app->input->post->get('companyname');
+			$this->setState('filter.companyname', $companyname);
+		}
+
+		$author = $this->getUserStateFromRequest($this->context . '.filter.author', 'filter_author');
+		if ($formSubmited)
+		{
+			$author = $app->input->post->get('author');
+			$this->setState('filter.author', $author);
+		}
+
+		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
+		if ($formSubmited)
+		{
+			$system_name = $app->input->post->get('system_name');
+			$this->setState('filter.system_name', $system_name);
+		}
+
+		$name_code = $this->getUserStateFromRequest($this->context . '.filter.name_code', 'filter_name_code');
+		if ($formSubmited)
+		{
+			$name_code = $app->input->post->get('name_code');
+			$this->setState('filter.name_code', $name_code);
+		}
+
+		$short_description = $this->getUserStateFromRequest($this->context . '.filter.short_description', 'filter_short_description');
+		if ($formSubmited)
+		{
+			$short_description = $app->input->post->get('short_description');
+			$this->setState('filter.short_description', $short_description);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -2199,9 +2234,17 @@ class ComponentbuilderModelJoomla_components extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -2225,14 +2268,38 @@ class ComponentbuilderModelJoomla_components extends JModelList
 		}
 
 		// Filter by Companyname.
-		if ($companyname = $this->getState('filter.companyname'))
+		$_companyname = $this->getState('filter.companyname');
+		if (is_numeric($_companyname))
 		{
-			$query->where('a.companyname = ' . $db->quote($db->escape($companyname)));
+			if (is_float($_companyname))
+			{
+				$query->where('a.companyname = ' . (float) $_companyname);
+			}
+			else
+			{
+				$query->where('a.companyname = ' . (int) $_companyname);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_companyname))
+		{
+			$query->where('a.companyname = ' . $db->quote($db->escape($_companyname)));
 		}
 		// Filter by Author.
-		if ($author = $this->getState('filter.author'))
+		$_author = $this->getState('filter.author');
+		if (is_numeric($_author))
 		{
-			$query->where('a.author = ' . $db->quote($db->escape($author)));
+			if (is_float($_author))
+			{
+				$query->where('a.author = ' . (float) $_author);
+			}
+			else
+			{
+				$query->where('a.author = ' . (int) $_author);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_author))
+		{
+			$query->where('a.author = ' . $db->quote($db->escape($_author)));
 		}
 
 		// Add the list ordering clause.
@@ -2328,6 +2395,41 @@ class ComponentbuilderModelJoomla_components extends JModelList
 							continue;
 						}
 
+						// decode php_site_event
+						$item->php_site_event = base64_decode($item->php_site_event);
+						// decode css_admin
+						$item->css_admin = base64_decode($item->css_admin);
+						// decode php_helper_both
+						$item->php_helper_both = base64_decode($item->php_helper_both);
+						// decode php_admin_event
+						$item->php_admin_event = base64_decode($item->php_admin_event);
+						// decode sql_uninstall
+						$item->sql_uninstall = base64_decode($item->sql_uninstall);
+						// decode php_postflight_install
+						$item->php_postflight_install = base64_decode($item->php_postflight_install);
+						// decode php_preflight_install
+						$item->php_preflight_install = base64_decode($item->php_preflight_install);
+						// decode php_method_uninstall
+						$item->php_method_uninstall = base64_decode($item->php_method_uninstall);
+						// decode php_helper_admin
+						$item->php_helper_admin = base64_decode($item->php_helper_admin);
+						// decode php_helper_site
+						$item->php_helper_site = base64_decode($item->php_helper_site);
+						// decode javascript
+						$item->javascript = base64_decode($item->javascript);
+						// decode css_site
+						$item->css_site = base64_decode($item->css_site);
+						if ($basickey && !is_numeric($item->whmcs_key) && $item->whmcs_key === base64_encode(base64_decode($item->whmcs_key, true)))
+						{
+							// decrypt whmcs_key
+							$item->whmcs_key = $basic->decryptString($item->whmcs_key);
+						}
+						// decode php_preflight_update
+						$item->php_preflight_update = base64_decode($item->php_preflight_update);
+						// decode php_postflight_update
+						$item->php_postflight_update = base64_decode($item->php_postflight_update);
+						// decode sql
+						$item->sql = base64_decode($item->sql);
 						if ($basickey && !is_numeric($item->crowdin_username) && $item->crowdin_username === base64_encode(base64_decode($item->crowdin_username, true)))
 						{
 							// decrypt crowdin_username
@@ -2335,46 +2437,11 @@ class ComponentbuilderModelJoomla_components extends JModelList
 						}
 						// decode buildcompsql
 						$item->buildcompsql = base64_decode($item->buildcompsql);
-						if ($basickey && !is_numeric($item->whmcs_key) && $item->whmcs_key === base64_encode(base64_decode($item->whmcs_key, true)))
-						{
-							// decrypt whmcs_key
-							$item->whmcs_key = $basic->decryptString($item->whmcs_key);
-						}
-						// decode php_helper_both
-						$item->php_helper_both = base64_decode($item->php_helper_both);
-						// decode php_helper_admin
-						$item->php_helper_admin = base64_decode($item->php_helper_admin);
-						// decode php_admin_event
-						$item->php_admin_event = base64_decode($item->php_admin_event);
-						// decode php_helper_site
-						$item->php_helper_site = base64_decode($item->php_helper_site);
-						// decode php_site_event
-						$item->php_site_event = base64_decode($item->php_site_event);
-						// decode javascript
-						$item->javascript = base64_decode($item->javascript);
-						// decode css_admin
-						$item->css_admin = base64_decode($item->css_admin);
-						// decode css_site
-						$item->css_site = base64_decode($item->css_site);
-						// decode php_preflight_install
-						$item->php_preflight_install = base64_decode($item->php_preflight_install);
-						// decode php_preflight_update
-						$item->php_preflight_update = base64_decode($item->php_preflight_update);
 						if ($basickey && !is_numeric($item->export_key) && $item->export_key === base64_encode(base64_decode($item->export_key, true)))
 						{
 							// decrypt export_key
 							$item->export_key = $basic->decryptString($item->export_key);
 						}
-						// decode php_postflight_install
-						$item->php_postflight_install = base64_decode($item->php_postflight_install);
-						// decode php_postflight_update
-						$item->php_postflight_update = base64_decode($item->php_postflight_update);
-						// decode php_method_uninstall
-						$item->php_method_uninstall = base64_decode($item->php_method_uninstall);
-						// decode sql
-						$item->sql = base64_decode($item->sql);
-						// decode sql_uninstall
-						$item->sql_uninstall = base64_decode($item->sql_uninstall);
 						// decode readme
 						$item->readme = base64_decode($item->readme);
 						if ($basickey && !is_numeric($item->crowdin_project_api_key) && $item->crowdin_project_api_key === base64_encode(base64_decode($item->crowdin_project_api_key, true)))
@@ -2444,14 +2511,26 @@ class ComponentbuilderModelJoomla_components extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
+		$id .= ':' . $this->getState('filter.companyname');
+		$id .= ':' . $this->getState('filter.author');
 		$id .= ':' . $this->getState('filter.system_name');
 		$id .= ':' . $this->getState('filter.name_code');
 		$id .= ':' . $this->getState('filter.short_description');
-		$id .= ':' . $this->getState('filter.companyname');
-		$id .= ':' . $this->getState('filter.author');
 
 		return parent::getStoreId($id);
 	}

@@ -26,22 +26,29 @@ class ComponentbuilderModelDynamic_gets extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
-				'a.name','name',
 				'a.main_source','main_source',
-				'a.gettype','gettype'
+				'a.gettype','gettype',
+				'a.name','name'
 			);
 		}
 
 		parent::__construct($config);
 	}
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -52,32 +59,52 @@ class ComponentbuilderModelDynamic_gets extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
-		$this->setState('filter.name', $name);
 
-		$main_source = $this->getUserStateFromRequest($this->context . '.filter.main_source', 'filter_main_source');
-		$this->setState('filter.main_source', $main_source);
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
 
-		$gettype = $this->getUserStateFromRequest($this->context . '.filter.gettype', 'filter_gettype');
-		$this->setState('filter.gettype', $gettype);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
-        
+
 		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
 		$this->setState('filter.created_by', $created_by);
 
 		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
 		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
+
+		$main_source = $this->getUserStateFromRequest($this->context . '.filter.main_source', 'filter_main_source');
+		if ($formSubmited)
+		{
+			$main_source = $app->input->post->get('main_source');
+			$this->setState('filter.main_source', $main_source);
+		}
+
+		$gettype = $this->getUserStateFromRequest($this->context . '.filter.gettype', 'filter_gettype');
+		if ($formSubmited)
+		{
+			$gettype = $app->input->post->get('gettype');
+			$this->setState('filter.gettype', $gettype);
+		}
+
+		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
+		if ($formSubmited)
+		{
+			$name = $app->input->post->get('name');
+			$this->setState('filter.name', $name);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -208,9 +235,17 @@ class ComponentbuilderModelDynamic_gets extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -234,14 +269,38 @@ class ComponentbuilderModelDynamic_gets extends JModelList
 		}
 
 		// Filter by Main_source.
-		if ($main_source = $this->getState('filter.main_source'))
+		$_main_source = $this->getState('filter.main_source');
+		if (is_numeric($_main_source))
 		{
-			$query->where('a.main_source = ' . $db->quote($db->escape($main_source)));
+			if (is_float($_main_source))
+			{
+				$query->where('a.main_source = ' . (float) $_main_source);
+			}
+			else
+			{
+				$query->where('a.main_source = ' . (int) $_main_source);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_main_source))
+		{
+			$query->where('a.main_source = ' . $db->quote($db->escape($_main_source)));
 		}
 		// Filter by Gettype.
-		if ($gettype = $this->getState('filter.gettype'))
+		$_gettype = $this->getState('filter.gettype');
+		if (is_numeric($_gettype))
 		{
-			$query->where('a.gettype = ' . $db->quote($db->escape($gettype)));
+			if (is_float($_gettype))
+			{
+				$query->where('a.gettype = ' . (float) $_gettype);
+			}
+			else
+			{
+				$query->where('a.gettype = ' . (int) $_gettype);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_gettype))
+		{
+			$query->where('a.gettype = ' . $db->quote($db->escape($_gettype)));
 		}
 
 		// Add the list ordering clause.
@@ -405,12 +464,24 @@ class ComponentbuilderModelDynamic_gets extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
-		$id .= ':' . $this->getState('filter.name');
 		$id .= ':' . $this->getState('filter.main_source');
 		$id .= ':' . $this->getState('filter.gettype');
+		$id .= ':' . $this->getState('filter.name');
 
 		return parent::getStoreId($id);
 	}

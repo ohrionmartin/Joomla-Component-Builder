@@ -26,24 +26,31 @@ class ComponentbuilderModelFieldtypes extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
-				'a.name','name',
-				'a.short_description','short_description',
 				'c.title','category_title',
 				'c.id', 'category_id',
-				'a.catid', 'catid'
+				'a.catid','catid',
+				'a.name','name',
+				'a.short_description','short_description'
 			);
 		}
 
 		parent::__construct($config);
 	}
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -54,11 +61,31 @@ class ComponentbuilderModelFieldtypes extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
-		$this->setState('filter.name', $name);
 
-		$short_description = $this->getUserStateFromRequest($this->context . '.filter.short_description', 'filter_short_description');
-		$this->setState('filter.short_description', $short_description);
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
+
+		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
+
+		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
+		$this->setState('filter.published', $published);
+
+		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
+		$this->setState('filter.created_by', $created_by);
+
+		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
+		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
 
 		$category = $app->getUserStateFromRequest($this->context . '.filter.category', 'filter_category');
 		$this->setState('filter.category', $category);
@@ -66,26 +93,26 @@ class ComponentbuilderModelFieldtypes extends JModelList
 		$categoryId = $this->getUserStateFromRequest($this->context . '.filter.category_id', 'filter_category_id');
 		$this->setState('filter.category_id', $categoryId);
 
-		$catid = $app->getUserStateFromRequest($this->context . '.filter.catid', 'filter_catid');
-		$this->setState('filter.catid', $catid);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
-		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		$catid = $this->getUserStateFromRequest($this->context . '.filter.catid', 'filter_catid');
+		if ($formSubmited)
+		{
+			$catid = $app->input->post->get('catid');
+			$this->setState('filter.catid', $catid);
+		}
 
-		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
-		$this->setState('filter.published', $published);
-        
-		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
-		$this->setState('filter.created_by', $created_by);
+		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
+		if ($formSubmited)
+		{
+			$name = $app->input->post->get('name');
+			$this->setState('filter.name', $name);
+		}
 
-		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
-		$this->setState('filter.created', $created);
+		$short_description = $this->getUserStateFromRequest($this->context . '.filter.short_description', 'filter_short_description');
+		if ($formSubmited)
+		{
+			$short_description = $app->input->post->get('short_description');
+			$this->setState('filter.short_description', $short_description);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -165,9 +192,17 @@ class ComponentbuilderModelFieldtypes extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -207,15 +242,15 @@ class ComponentbuilderModelFieldtypes extends JModelList
 		}
 		elseif (is_array($categoryId))
 		{
-			ArrayHelper::toInteger($categoryId);
+			$categoryId = ArrayHelper::toInteger($categoryId);
 			$categoryId = implode(',', $categoryId);
-			$query->where('a.category IN (' . $categoryId . ')');
+			$query->where('a.catid IN (' . $categoryId . ')');
 		}
 
 
 		// Add the list ordering clause.
 		$orderCol = $this->state->get('list.ordering', 'a.id');
-		$orderDirn = $this->state->get('list.direction', 'asc');
+		$orderDirn = $this->state->get('list.direction', 'desc');
 		if ($orderCol != '')
 		{
 			$query->order($db->escape($orderCol . ' ' . $orderDirn));
@@ -358,14 +393,59 @@ class ComponentbuilderModelFieldtypes extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
+		// Check if the value is an array
+		$_category = $this->getState('filter.category');
+		if (ComponentbuilderHelper::checkArray($_category))
+		{
+			$id .= ':' . implode(':', $_category);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_category)
+		 || ComponentbuilderHelper::checkString($_category))
+		{
+			$id .= ':' . $_category;
+		}
+		// Check if the value is an array
+		$_category_id = $this->getState('filter.category_id');
+		if (ComponentbuilderHelper::checkArray($_category_id))
+		{
+			$id .= ':' . implode(':', $_category_id);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_category_id)
+		 || ComponentbuilderHelper::checkString($_category_id))
+		{
+			$id .= ':' . $_category_id;
+		}
+		// Check if the value is an array
+		$_catid = $this->getState('filter.catid');
+		if (ComponentbuilderHelper::checkArray($_catid))
+		{
+			$id .= ':' . implode(':', $_catid);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_catid)
+		 || ComponentbuilderHelper::checkString($_catid))
+		{
+			$id .= ':' . $_catid;
+		}
 		$id .= ':' . $this->getState('filter.name');
 		$id .= ':' . $this->getState('filter.short_description');
-		$id .= ':' . $this->getState('filter.category');
-		$id .= ':' . $this->getState('filter.category_id');
-		$id .= ':' . $this->getState('filter.catid');
 
 		return parent::getStoreId($id);
 	}

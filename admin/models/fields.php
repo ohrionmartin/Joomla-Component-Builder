@@ -26,28 +26,35 @@ class ComponentbuilderModelFields extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
-				'a.name','name',
-				'g.name',
+				'g.name','fieldtype',
 				'a.datatype','datatype',
 				'a.indexes','indexes',
 				'a.null_switch','null_switch',
 				'a.store','store',
 				'c.title','category_title',
 				'c.id', 'category_id',
-				'a.catid', 'catid'
+				'a.catid','catid',
+				'a.name','name'
 			);
 		}
 
 		parent::__construct($config);
 	}
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -58,23 +65,66 @@ class ComponentbuilderModelFields extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
-		$this->setState('filter.name', $name);
+
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
+
+		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
+
+		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
+		$this->setState('filter.published', $published);
+
+		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
+		$this->setState('filter.created_by', $created_by);
+
+		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
+		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
 
 		$fieldtype = $this->getUserStateFromRequest($this->context . '.filter.fieldtype', 'filter_fieldtype');
-		$this->setState('filter.fieldtype', $fieldtype);
+		if ($formSubmited)
+		{
+			$fieldtype = $app->input->post->get('fieldtype');
+			$this->setState('filter.fieldtype', $fieldtype);
+		}
 
 		$datatype = $this->getUserStateFromRequest($this->context . '.filter.datatype', 'filter_datatype');
-		$this->setState('filter.datatype', $datatype);
+		if ($formSubmited)
+		{
+			$datatype = $app->input->post->get('datatype');
+			$this->setState('filter.datatype', $datatype);
+		}
 
 		$indexes = $this->getUserStateFromRequest($this->context . '.filter.indexes', 'filter_indexes');
-		$this->setState('filter.indexes', $indexes);
+		if ($formSubmited)
+		{
+			$indexes = $app->input->post->get('indexes');
+			$this->setState('filter.indexes', $indexes);
+		}
 
 		$null_switch = $this->getUserStateFromRequest($this->context . '.filter.null_switch', 'filter_null_switch');
-		$this->setState('filter.null_switch', $null_switch);
+		if ($formSubmited)
+		{
+			$null_switch = $app->input->post->get('null_switch');
+			$this->setState('filter.null_switch', $null_switch);
+		}
 
 		$store = $this->getUserStateFromRequest($this->context . '.filter.store', 'filter_store');
-		$this->setState('filter.store', $store);
+		if ($formSubmited)
+		{
+			$store = $app->input->post->get('store');
+			$this->setState('filter.store', $store);
+		}
 
 		$category = $app->getUserStateFromRequest($this->context . '.filter.category', 'filter_category');
 		$this->setState('filter.category', $category);
@@ -82,26 +132,19 @@ class ComponentbuilderModelFields extends JModelList
 		$categoryId = $this->getUserStateFromRequest($this->context . '.filter.category_id', 'filter_category_id');
 		$this->setState('filter.category_id', $categoryId);
 
-		$catid = $app->getUserStateFromRequest($this->context . '.filter.catid', 'filter_catid');
-		$this->setState('filter.catid', $catid);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
-		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		$catid = $this->getUserStateFromRequest($this->context . '.filter.catid', 'filter_catid');
+		if ($formSubmited)
+		{
+			$catid = $app->input->post->get('catid');
+			$this->setState('filter.catid', $catid);
+		}
 
-		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
-		$this->setState('filter.published', $published);
-        
-		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
-		$this->setState('filter.created_by', $created_by);
-
-		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
-		$this->setState('filter.created', $created);
+		$name = $this->getUserStateFromRequest($this->context . '.filter.name', 'filter_name');
+		if ($formSubmited)
+		{
+			$name = $app->input->post->get('name');
+			$this->setState('filter.name', $name);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -287,9 +330,17 @@ class ComponentbuilderModelFields extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -312,30 +363,90 @@ class ComponentbuilderModelFields extends JModelList
 			}
 		}
 
-		// Filter by fieldtype.
-		if ($fieldtype = $this->getState('filter.fieldtype'))
+		// Filter by Fieldtype.
+		$_fieldtype = $this->getState('filter.fieldtype');
+		if (is_numeric($_fieldtype))
 		{
-			$query->where('a.fieldtype = ' . $db->quote($db->escape($fieldtype)));
+			if (is_float($_fieldtype))
+			{
+				$query->where('a.fieldtype = ' . (float) $_fieldtype);
+			}
+			else
+			{
+				$query->where('a.fieldtype = ' . (int) $_fieldtype);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_fieldtype))
+		{
+			$query->where('a.fieldtype = ' . $db->quote($db->escape($_fieldtype)));
 		}
 		// Filter by Datatype.
-		if ($datatype = $this->getState('filter.datatype'))
+		$_datatype = $this->getState('filter.datatype');
+		if (is_numeric($_datatype))
 		{
-			$query->where('a.datatype = ' . $db->quote($db->escape($datatype)));
+			if (is_float($_datatype))
+			{
+				$query->where('a.datatype = ' . (float) $_datatype);
+			}
+			else
+			{
+				$query->where('a.datatype = ' . (int) $_datatype);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_datatype))
+		{
+			$query->where('a.datatype = ' . $db->quote($db->escape($_datatype)));
 		}
 		// Filter by Indexes.
-		if ($indexes = $this->getState('filter.indexes'))
+		$_indexes = $this->getState('filter.indexes');
+		if (is_numeric($_indexes))
 		{
-			$query->where('a.indexes = ' . $db->quote($db->escape($indexes)));
+			if (is_float($_indexes))
+			{
+				$query->where('a.indexes = ' . (float) $_indexes);
+			}
+			else
+			{
+				$query->where('a.indexes = ' . (int) $_indexes);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_indexes))
+		{
+			$query->where('a.indexes = ' . $db->quote($db->escape($_indexes)));
 		}
 		// Filter by Null_switch.
-		if ($null_switch = $this->getState('filter.null_switch'))
+		$_null_switch = $this->getState('filter.null_switch');
+		if (is_numeric($_null_switch))
 		{
-			$query->where('a.null_switch = ' . $db->quote($db->escape($null_switch)));
+			if (is_float($_null_switch))
+			{
+				$query->where('a.null_switch = ' . (float) $_null_switch);
+			}
+			else
+			{
+				$query->where('a.null_switch = ' . (int) $_null_switch);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_null_switch))
+		{
+			$query->where('a.null_switch = ' . $db->quote($db->escape($_null_switch)));
 		}
 		// Filter by Store.
-		if ($store = $this->getState('filter.store'))
+		$_store = $this->getState('filter.store');
+		if (is_numeric($_store))
 		{
-			$query->where('a.store = ' . $db->quote($db->escape($store)));
+			if (is_float($_store))
+			{
+				$query->where('a.store = ' . (float) $_store);
+			}
+			else
+			{
+				$query->where('a.store = ' . (int) $_store);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_store))
+		{
+			$query->where('a.store = ' . $db->quote($db->escape($_store)));
 		}
 
 		// Filter by a single or group of categories.
@@ -354,9 +465,9 @@ class ComponentbuilderModelFields extends JModelList
 		}
 		elseif (is_array($categoryId))
 		{
-			ArrayHelper::toInteger($categoryId);
+			$categoryId = ArrayHelper::toInteger($categoryId);
 			$categoryId = implode(',', $categoryId);
-			$query->where('a.category IN (' . $categoryId . ')');
+			$query->where('a.catid IN (' . $categoryId . ')');
 		}
 
 
@@ -521,18 +632,63 @@ class ComponentbuilderModelFields extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
-		$id .= ':' . $this->getState('filter.name');
 		$id .= ':' . $this->getState('filter.fieldtype');
 		$id .= ':' . $this->getState('filter.datatype');
 		$id .= ':' . $this->getState('filter.indexes');
 		$id .= ':' . $this->getState('filter.null_switch');
 		$id .= ':' . $this->getState('filter.store');
-		$id .= ':' . $this->getState('filter.category');
-		$id .= ':' . $this->getState('filter.category_id');
-		$id .= ':' . $this->getState('filter.catid');
+		// Check if the value is an array
+		$_category = $this->getState('filter.category');
+		if (ComponentbuilderHelper::checkArray($_category))
+		{
+			$id .= ':' . implode(':', $_category);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_category)
+		 || ComponentbuilderHelper::checkString($_category))
+		{
+			$id .= ':' . $_category;
+		}
+		// Check if the value is an array
+		$_category_id = $this->getState('filter.category_id');
+		if (ComponentbuilderHelper::checkArray($_category_id))
+		{
+			$id .= ':' . implode(':', $_category_id);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_category_id)
+		 || ComponentbuilderHelper::checkString($_category_id))
+		{
+			$id .= ':' . $_category_id;
+		}
+		// Check if the value is an array
+		$_catid = $this->getState('filter.catid');
+		if (ComponentbuilderHelper::checkArray($_catid))
+		{
+			$id .= ':' . implode(':', $_catid);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_catid)
+		 || ComponentbuilderHelper::checkString($_catid))
+		{
+			$id .= ':' . $_catid;
+		}
+		$id .= ':' . $this->getState('filter.name');
 
 		return parent::getStoreId($id);
 	}

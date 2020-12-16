@@ -10,9 +10,9 @@ This is a [Joomla 3.x](https://extensions.joomla.org/extension/component-builder
 
 The Component Builder for [Joomla](https://extensions.joomla.org/extension/component-builder/) is highly advanced tool that is truly able to build extremely complex components in a fraction of the time.
 
-Whether you're a seasoned [Joomla](https://extensions.joomla.org/extension/component-builder/) developer, or have just started, Component Builder will safe you lots of time and money. A real must have!
+Whether you're a seasoned [Joomla](https://extensions.joomla.org/extension/component-builder/) developer, or have just started, Component Builder will save you lots of time and money. A real must have!
 
-You can install it quite easily and with no limitations. On [github](https://github.com/vdm-io/Joomla-Component-Builder/releases) is the latest release (2.11.7) with **ALL** its features and **ALL** concepts totally open-source and free! 
+You can install it quite easily and with no limitations. On [github](https://github.com/vdm-io/Joomla-Component-Builder/releases) is the latest release (2.12.3) with **ALL** its features and **ALL** concepts totally open-source and free! 
 
 > Watch Quick Build of a Hello World component in [JCB on Youtube](https://www.youtube.com/watch?v=IQfsLYIeblk&list=PLQRGFI8XZ_wtGvPQZWBfDzzlERLQgpMRE&index=45)
 
@@ -133,7 +133,6 @@ Get involved on the forums, and the GitHub issues, and you can even help us deve
 TODO
 ======
 
-- Add automatic (REST) API ability for all components build with [JCB](http://joomlacomponentbuilder.com). So we can link any component build with JCB to an Android/Apple APP.
 - Add automatic unit testing. To nurture pipeline integration for all components build with [JCB](http://joomlacomponentbuilder.com).
 - Team collaborative development across [JCB](http://joomlacomponentbuilder.com) installations offline and online.
 - Documentation (maintained by the community) for [JCB](http://joomlacomponentbuilder.com). (help us select the best system for this)
@@ -144,20 +143,21 @@ TODO
 + *Author*: [Llewellyn van der Merwe](mailto:llewellyn@joomlacomponentbuilder.com)
 + *Name*: [Component Builder](https://github.com/vdm-io/Joomla-Component-Builder)
 + *First Build*: 30th April, 2015
-+ *Last Build*: 29th October, 2020
-+ *Version*: 2.11.7
++ *Last Build*: 13th December, 2020
++ *Version*: 2.12.3
 + *Copyright*: Copyright (C) 2015 - 2020 Vast Development Method. All rights reserved.
 + *License*: GNU General Public License version 2 or later; see LICENSE.txt
-+ *Line count*: **283847**
-+ *Field count*: **1536**
-+ *File count*: **1799**
-+ *Folder count*: **304**
++ *Line count*: **290479**
++ *Field count*: **1555**
++ *File count*: **1923**
++ *Folder count*: **316**
 
 > This **component** was build with a [Joomla](https://extensions.joomla.org/extension/component-builder/) [Automated Component Builder](http://joomlacomponentbuilder.com).
 > Developed by [Llewellyn van der Merwe](mailto:llewellyn@joomlacomponentbuilder.com)
 
+
 ## Contributors
-This project exists thanks to all the people who contribute. 
+This project exists thanks to all the people who contribute to the [Joomla Component Builder Project](https://github.com/vdm-io/Joomla-Component-Builder).
 
 [![Contributors](https://opencollective.com/Joomla-Component-Builder/contributors.svg?width=890&button=false)](https://github.com/vdm-io/Joomla-Component-Builder/graphs/contributors)
 
@@ -179,3 +179,14 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 [![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/7/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/7/website)
 [![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/8/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/8/website)
 [![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/9/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/9/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/10/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/10/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/11/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/11/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/12/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/12/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/13/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/13/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/14/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/14/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/15/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/15/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/16/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/16/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/17/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/17/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/18/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/18/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/19/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/19/website)
+[![Sponsor](https://opencollective.com/Joomla-Component-Builder/sponsor/20/avatar.svg)](https://opencollective.com/Joomla-Component-Builder/sponsor/20/website)

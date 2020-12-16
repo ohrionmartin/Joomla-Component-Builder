@@ -55,7 +55,7 @@ class ComponentbuilderControllerJoomla_components extends JControllerAdmin
 			$input = JFactory::getApplication()->input;
 			$pks = $input->post->get('cid', array(), 'array');
 			// Sanitize the input
-			ArrayHelper::toInteger($pks);
+			$pks = ArrayHelper::toInteger($pks);
 			// Get the model
 			$model = $this->getModel('Joomla_components');
 			// get the data to export
@@ -391,7 +391,7 @@ class ComponentbuilderControllerJoomla_components extends JControllerAdmin
 						$subject = JText::_('COM_COMPONENTBUILDER_JOOMLA_COMPONENT_BUILDER_BACKUP_KEY');
 						// email the message
 						componentbuilderEmail::send($email, $subject, componentbuilderEmail::setTableBody($message, $subject), $plainText, 1);
-						$backupNotice[] = JText::_('COM_COMPONENTBUILDER_EMAIL_WITH_THE_NEW_KEY_WAS_SEND');
+						$backupNotice[] = JText::_('COM_COMPONENTBUILDER_EMAIL_WITH_THE_NEW_KEY_WAS_SENT');
 					}
 					else
 					{

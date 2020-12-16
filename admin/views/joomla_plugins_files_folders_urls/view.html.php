@@ -34,10 +34,14 @@ class ComponentbuilderViewJoomla_plugins_files_folders_urls extends JViewLegacy
 		$this->pagination = $this->get('Pagination');
 		$this->state = $this->get('State');
 		$this->user = JFactory::getUser();
+		// Load the filter form from xml.
+		$this->filterForm = $this->get('FilterForm');
+		// Load the active filters.
+		$this->activeFilters = $this->get('ActiveFilters');
 		// Add the list ordering clause.
 		$this->listOrder = $this->escape($this->state->get('list.ordering', 'a.id'));
-		$this->listDirn = $this->escape($this->state->get('list.direction', 'asc'));
-		$this->saveOrder = $this->listOrder == 'ordering';
+		$this->listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
+		$this->saveOrder = $this->listOrder == 'a.ordering';
 		// set the return here value
 		$this->return_here = urlencode(base64_encode((string) JUri::getInstance()));
 		// get global action permissions
@@ -144,30 +148,17 @@ class ComponentbuilderViewJoomla_plugins_files_folders_urls extends JViewLegacy
 			JToolBarHelper::preferences('com_componentbuilder');
 		}
 
-		if ($this->canState)
+		// Only load published batch if state and batch is allowed
+		if ($this->canState && $this->canBatch)
 		{
-			JHtmlSidebar::addFilter(
-				JText::_('JOPTION_SELECT_PUBLISHED'),
-				'filter_published',
-				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions'), 'value', 'text', $this->state->get('filter.published'), true)
+			JHtmlBatch_::addListSelection(
+				JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
+				'batch[published]',
+				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
 			);
-			// only load if batch allowed
-			if ($this->canBatch)
-			{
-				JHtmlBatch_::addListSelection(
-					JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
-					'batch[published]',
-					JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
-				);
-			}
 		}
 
-		JHtmlSidebar::addFilter(
-			JText::_('JOPTION_SELECT_ACCESS'),
-			'filter_access',
-			JHtml::_('select.options', JHtml::_('access.assetgroups'), 'value', 'text', $this->state->get('filter.access'))
-		);
-
+		// Only load access batch if create, edit and batch is allowed
 		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
 			JHtmlBatch_::addListSelection(
@@ -219,7 +210,7 @@ class ComponentbuilderViewJoomla_plugins_files_folders_urls extends JViewLegacy
 	protected function getSortFields()
 	{
 		return array(
-			'ordering' => JText::_('JGRID_HEADING_ORDERING'),
+			'a.ordering' => JText::_('JGRID_HEADING_ORDERING'),
 			'a.published' => JText::_('JSTATUS'),
 			'a.id' => JText::_('JGRID_HEADING_ID')
 		);

@@ -34,10 +34,14 @@ class ComponentbuilderViewJoomla_plugins extends JViewLegacy
 		$this->pagination = $this->get('Pagination');
 		$this->state = $this->get('State');
 		$this->user = JFactory::getUser();
+		// Load the filter form from xml.
+		$this->filterForm = $this->get('FilterForm');
+		// Load the active filters.
+		$this->activeFilters = $this->get('ActiveFilters');
 		// Add the list ordering clause.
 		$this->listOrder = $this->escape($this->state->get('list.ordering', 'a.id'));
 		$this->listDirn = $this->escape($this->state->get('list.direction', 'desc'));
-		$this->saveOrder = $this->listOrder == 'ordering';
+		$this->saveOrder = $this->listOrder == 'a.ordering';
 		// set the return here value
 		$this->return_here = urlencode(base64_encode((string) JUri::getInstance()));
 		// get global action permissions
@@ -164,30 +168,17 @@ class ComponentbuilderViewJoomla_plugins extends JViewLegacy
 			JToolBarHelper::preferences('com_componentbuilder');
 		}
 
-		if ($this->canState)
+		// Only load published batch if state and batch is allowed
+		if ($this->canState && $this->canBatch)
 		{
-			JHtmlSidebar::addFilter(
-				JText::_('JOPTION_SELECT_PUBLISHED'),
-				'filter_published',
-				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions'), 'value', 'text', $this->state->get('filter.published'), true)
+			JHtmlBatch_::addListSelection(
+				JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
+				'batch[published]',
+				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
 			);
-			// only load if batch allowed
-			if ($this->canBatch)
-			{
-				JHtmlBatch_::addListSelection(
-					JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
-					'batch[published]',
-					JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
-				);
-			}
 		}
 
-		JHtmlSidebar::addFilter(
-			JText::_('JOPTION_SELECT_ACCESS'),
-			'filter_access',
-			JHtml::_('select.options', JHtml::_('access.assetgroups'), 'value', 'text', $this->state->get('filter.access'))
-		);
-
+		// Only load access batch if create, edit and batch is allowed
 		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
 			JHtmlBatch_::addListSelection(
@@ -197,64 +188,44 @@ class ComponentbuilderViewJoomla_plugins extends JViewLegacy
 			);
 		}
 
-		// Set Class Extends Name Selection
-		$this->class_extendsNameOptions = JFormHelper::loadFieldType('Classextends')->options;
-		// We do some sanitation for Class Extends Name filter
-		if (ComponentbuilderHelper::checkArray($this->class_extendsNameOptions) &&
-			isset($this->class_extendsNameOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->class_extendsNameOptions[0]->value))
+		// Only load Class Extends Name batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
-			unset($this->class_extendsNameOptions[0]);
-		}
-		// Only load Class Extends Name filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->class_extendsNameOptions))
-		{
-			// Class Extends Name Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_CLASS_EXTENDS_LABEL').' -',
-				'filter_class_extends',
-				JHtml::_('select.options', $this->class_extendsNameOptions, 'value', 'text', $this->state->get('filter.class_extends'))
-			);
-
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+			// Set Class Extends Name Selection
+			$this->class_extendsNameOptions = JFormHelper::loadFieldType('Classextends')->options;
+			// We do some sanitation for Class Extends Name filter
+			if (ComponentbuilderHelper::checkArray($this->class_extendsNameOptions) &&
+				isset($this->class_extendsNameOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->class_extendsNameOptions[0]->value))
 			{
-				// Class Extends Name Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_CLASS_EXTENDS_LABEL').' -',
-					'batch[class_extends]',
-					JHtml::_('select.options', $this->class_extendsNameOptions, 'value', 'text')
-				);
+				unset($this->class_extendsNameOptions[0]);
 			}
-		}
-
-		// Set Joomla Plugin Group Name Selection
-		$this->joomla_plugin_groupNameOptions = JFormHelper::loadFieldType('Joomlaplugingroups')->options;
-		// We do some sanitation for Joomla Plugin Group Name filter
-		if (ComponentbuilderHelper::checkArray($this->joomla_plugin_groupNameOptions) &&
-			isset($this->joomla_plugin_groupNameOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->joomla_plugin_groupNameOptions[0]->value))
-		{
-			unset($this->joomla_plugin_groupNameOptions[0]);
-		}
-		// Only load Joomla Plugin Group Name filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->joomla_plugin_groupNameOptions))
-		{
-			// Joomla Plugin Group Name Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_JOOMLA_PLUGIN_GROUP_LABEL').' -',
-				'filter_joomla_plugin_group',
-				JHtml::_('select.options', $this->joomla_plugin_groupNameOptions, 'value', 'text', $this->state->get('filter.joomla_plugin_group'))
+			// Class Extends Name Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_CLASS_EXTENDS_LABEL').' -',
+				'batch[class_extends]',
+				JHtml::_('select.options', $this->class_extendsNameOptions, 'value', 'text')
 			);
+		}
 
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+		// Only load Joomla Plugin Group Name batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
+		{
+			// Set Joomla Plugin Group Name Selection
+			$this->joomla_plugin_groupNameOptions = JFormHelper::loadFieldType('Joomlaplugingroups')->options;
+			// We do some sanitation for Joomla Plugin Group Name filter
+			if (ComponentbuilderHelper::checkArray($this->joomla_plugin_groupNameOptions) &&
+				isset($this->joomla_plugin_groupNameOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->joomla_plugin_groupNameOptions[0]->value))
 			{
-				// Joomla Plugin Group Name Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_JOOMLA_PLUGIN_GROUP_LABEL').' -',
-					'batch[joomla_plugin_group]',
-					JHtml::_('select.options', $this->joomla_plugin_groupNameOptions, 'value', 'text')
-				);
+				unset($this->joomla_plugin_groupNameOptions[0]);
 			}
+			// Joomla Plugin Group Name Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_JOOMLA_PLUGIN_GROUP_LABEL').' -',
+				'batch[joomla_plugin_group]',
+				JHtml::_('select.options', $this->joomla_plugin_groupNameOptions, 'value', 'text')
+			);
 		}
 	}
 
@@ -299,7 +270,7 @@ class ComponentbuilderViewJoomla_plugins extends JViewLegacy
 	protected function getSortFields()
 	{
 		return array(
-			'ordering' => JText::_('JGRID_HEADING_ORDERING'),
+			'a.ordering' => JText::_('JGRID_HEADING_ORDERING'),
 			'a.published' => JText::_('JSTATUS'),
 			'a.system_name' => JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_SYSTEM_NAME_LABEL'),
 			'g.name' => JText::_('COM_COMPONENTBUILDER_JOOMLA_PLUGIN_CLASS_EXTENDS_LABEL'),

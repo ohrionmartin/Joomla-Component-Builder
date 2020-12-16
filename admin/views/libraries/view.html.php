@@ -34,10 +34,14 @@ class ComponentbuilderViewLibraries extends JViewLegacy
 		$this->pagination = $this->get('Pagination');
 		$this->state = $this->get('State');
 		$this->user = JFactory::getUser();
+		// Load the filter form from xml.
+		$this->filterForm = $this->get('FilterForm');
+		// Load the active filters.
+		$this->activeFilters = $this->get('ActiveFilters');
 		// Add the list ordering clause.
 		$this->listOrder = $this->escape($this->state->get('list.ordering', 'a.id'));
 		$this->listDirn = $this->escape($this->state->get('list.direction', 'desc'));
-		$this->saveOrder = $this->listOrder == 'ordering';
+		$this->saveOrder = $this->listOrder == 'a.ordering';
 		// set the return here value
 		$this->return_here = urlencode(base64_encode((string) JUri::getInstance()));
 		// get global action permissions
@@ -149,30 +153,17 @@ class ComponentbuilderViewLibraries extends JViewLegacy
 			JToolBarHelper::preferences('com_componentbuilder');
 		}
 
-		if ($this->canState)
+		// Only load published batch if state and batch is allowed
+		if ($this->canState && $this->canBatch)
 		{
-			JHtmlSidebar::addFilter(
-				JText::_('JOPTION_SELECT_PUBLISHED'),
-				'filter_published',
-				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions'), 'value', 'text', $this->state->get('filter.published'), true)
+			JHtmlBatch_::addListSelection(
+				JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
+				'batch[published]',
+				JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
 			);
-			// only load if batch allowed
-			if ($this->canBatch)
-			{
-				JHtmlBatch_::addListSelection(
-					JText::_('COM_COMPONENTBUILDER_KEEP_ORIGINAL_STATE'),
-					'batch[published]',
-					JHtml::_('select.options', JHtml::_('jgrid.publishedOptions', array('all' => false)), 'value', 'text', '', true)
-				);
-			}
 		}
 
-		JHtmlSidebar::addFilter(
-			JText::_('JOPTION_SELECT_ACCESS'),
-			'filter_access',
-			JHtml::_('select.options', JHtml::_('access.assetgroups'), 'value', 'text', $this->state->get('filter.access'))
-		);
-
+		// Only load access batch if create, edit and batch is allowed
 		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
 			JHtmlBatch_::addListSelection(
@@ -182,94 +173,64 @@ class ComponentbuilderViewLibraries extends JViewLegacy
 			);
 		}
 
-		// Set Target Selection
-		$this->targetOptions = $this->getTheTargetSelections();
-		// We do some sanitation for Target filter
-		if (ComponentbuilderHelper::checkArray($this->targetOptions) &&
-			isset($this->targetOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->targetOptions[0]->value))
+		// Only load Target batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
 		{
-			unset($this->targetOptions[0]);
-		}
-		// Only load Target filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->targetOptions))
-		{
-			// Target Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_LIBRARY_TARGET_LABEL').' -',
-				'filter_target',
-				JHtml::_('select.options', $this->targetOptions, 'value', 'text', $this->state->get('filter.target'))
-			);
-
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+			// Set Target Selection
+			$this->targetOptions = JFormHelper::loadFieldType('librariesfiltertarget')->options;
+			// We do some sanitation for Target filter
+			if (ComponentbuilderHelper::checkArray($this->targetOptions) &&
+				isset($this->targetOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->targetOptions[0]->value))
 			{
-				// Target Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_LIBRARY_TARGET_LABEL').' -',
-					'batch[target]',
-					JHtml::_('select.options', $this->targetOptions, 'value', 'text')
-				);
+				unset($this->targetOptions[0]);
 			}
-		}
-
-		// Set How Selection
-		$this->howOptions = JFormHelper::loadFieldType('Filebehaviour')->options;
-		// We do some sanitation for How filter
-		if (ComponentbuilderHelper::checkArray($this->howOptions) &&
-			isset($this->howOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->howOptions[0]->value))
-		{
-			unset($this->howOptions[0]);
-		}
-		// Only load How filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->howOptions))
-		{
-			// How Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_LIBRARY_HOW_LABEL').' -',
-				'filter_how',
-				JHtml::_('select.options', $this->howOptions, 'value', 'text', $this->state->get('filter.how'))
+			// Target Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_LIBRARY_TARGET_LABEL').' -',
+				'batch[target]',
+				JHtml::_('select.options', $this->targetOptions, 'value', 'text')
 			);
+		}
 
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+		// Only load How batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
+		{
+			// Set How Selection
+			$this->howOptions = JFormHelper::loadFieldType('Filebehaviour')->options;
+			// We do some sanitation for How filter
+			if (ComponentbuilderHelper::checkArray($this->howOptions) &&
+				isset($this->howOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->howOptions[0]->value))
 			{
-				// How Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_LIBRARY_HOW_LABEL').' -',
-					'batch[how]',
-					JHtml::_('select.options', $this->howOptions, 'value', 'text')
-				);
+				unset($this->howOptions[0]);
 			}
-		}
-
-		// Set Type Selection
-		$this->typeOptions = $this->getTheTypeSelections();
-		// We do some sanitation for Type filter
-		if (ComponentbuilderHelper::checkArray($this->typeOptions) &&
-			isset($this->typeOptions[0]->value) &&
-			!ComponentbuilderHelper::checkString($this->typeOptions[0]->value))
-		{
-			unset($this->typeOptions[0]);
-		}
-		// Only load Type filter if it has values
-		if (ComponentbuilderHelper::checkArray($this->typeOptions))
-		{
-			// Type Filter
-			JHtmlSidebar::addFilter(
-				'- Select '.JText::_('COM_COMPONENTBUILDER_LIBRARY_TYPE_LABEL').' -',
-				'filter_type',
-				JHtml::_('select.options', $this->typeOptions, 'value', 'text', $this->state->get('filter.type'))
+			// How Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_LIBRARY_HOW_LABEL').' -',
+				'batch[how]',
+				JHtml::_('select.options', $this->howOptions, 'value', 'text')
 			);
+		}
 
-			if ($this->canBatch && $this->canCreate && $this->canEdit)
+		// Only load Type batch if create, edit, and batch is allowed
+		if ($this->canBatch && $this->canCreate && $this->canEdit)
+		{
+			// Set Type Selection
+			$this->typeOptions = JFormHelper::loadFieldType('librariesfiltertype')->options;
+			// We do some sanitation for Type filter
+			if (ComponentbuilderHelper::checkArray($this->typeOptions) &&
+				isset($this->typeOptions[0]->value) &&
+				!ComponentbuilderHelper::checkString($this->typeOptions[0]->value))
 			{
-				// Type Batch Selection
-				JHtmlBatch_::addListSelection(
-					'- Keep Original '.JText::_('COM_COMPONENTBUILDER_LIBRARY_TYPE_LABEL').' -',
-					'batch[type]',
-					JHtml::_('select.options', $this->typeOptions, 'value', 'text')
-				);
+				unset($this->typeOptions[0]);
 			}
+			// Type Batch Selection
+			JHtmlBatch_::addListSelection(
+				'- Keep Original '.JText::_('COM_COMPONENTBUILDER_LIBRARY_TYPE_LABEL').' -',
+				'batch[type]',
+				JHtml::_('select.options', $this->typeOptions, 'value', 'text')
+			);
 		}
 	}
 
@@ -314,7 +275,7 @@ class ComponentbuilderViewLibraries extends JViewLegacy
 	protected function getSortFields()
 	{
 		return array(
-			'ordering' => JText::_('JGRID_HEADING_ORDERING'),
+			'a.ordering' => JText::_('JGRID_HEADING_ORDERING'),
 			'a.published' => JText::_('JSTATUS'),
 			'a.name' => JText::_('COM_COMPONENTBUILDER_LIBRARY_NAME_LABEL'),
 			'a.target' => JText::_('COM_COMPONENTBUILDER_LIBRARY_TARGET_LABEL'),
@@ -322,77 +283,5 @@ class ComponentbuilderViewLibraries extends JViewLegacy
 			'a.description' => JText::_('COM_COMPONENTBUILDER_LIBRARY_DESCRIPTION_LABEL'),
 			'a.id' => JText::_('JGRID_HEADING_ID')
 		);
-	}
-
-	protected function getTheTargetSelections()
-	{
-		// Get a db connection.
-		$db = JFactory::getDbo();
-
-		// Create a new query object.
-		$query = $db->getQuery(true);
-
-		// Select the text.
-		$query->select($db->quoteName('target'));
-		$query->from($db->quoteName('#__componentbuilder_library'));
-		$query->order($db->quoteName('target') . ' ASC');
-
-		// Reset the query using our newly populated query object.
-		$db->setQuery($query);
-
-		$results = $db->loadColumn();
-
-		if ($results)
-		{
-			// get model
-			$model = $this->getModel();
-			$results = array_unique($results);
-			$_filter = array();
-			foreach ($results as $target)
-			{
-				// Translate the target selection
-				$text = $model->selectionTranslation($target,'target');
-				// Now add the target and its text to the options array
-				$_filter[] = JHtml::_('select.option', $target, JText::_($text));
-			}
-			return $_filter;
-		}
-		return false;
-	}
-
-	protected function getTheTypeSelections()
-	{
-		// Get a db connection.
-		$db = JFactory::getDbo();
-
-		// Create a new query object.
-		$query = $db->getQuery(true);
-
-		// Select the text.
-		$query->select($db->quoteName('type'));
-		$query->from($db->quoteName('#__componentbuilder_library'));
-		$query->order($db->quoteName('type') . ' ASC');
-
-		// Reset the query using our newly populated query object.
-		$db->setQuery($query);
-
-		$results = $db->loadColumn();
-
-		if ($results)
-		{
-			// get model
-			$model = $this->getModel();
-			$results = array_unique($results);
-			$_filter = array();
-			foreach ($results as $type)
-			{
-				// Translate the type selection
-				$text = $model->selectionTranslation($type,'type');
-				// Now add the type and its text to the options array
-				$_filter[] = JHtml::_('select.option', $type, JText::_($text));
-			}
-			return $_filter;
-		}
-		return false;
 	}
 }

@@ -26,12 +26,13 @@ class ComponentbuilderModelJoomla_plugins extends JModelList
 			$config['filter_fields'] = array(
 				'a.id','id',
 				'a.published','published',
+				'a.access','access',
 				'a.ordering','ordering',
 				'a.created_by','created_by',
 				'a.modified_by','modified_by',
-				'a.system_name','system_name',
-				'g.name',
-				'h.name'
+				'g.name','class_extends',
+				'h.name','joomla_plugin_group',
+				'a.system_name','system_name'
 			);
 		}
 
@@ -207,11 +208,17 @@ class ComponentbuilderModelJoomla_plugins extends JModelList
 		return true;
 	}
 
-	
+
 	/**
 	 * Method to auto-populate the model state.
 	 *
+	 * Note. Calling getState in this method will result in recursion.
+	 *
+	 * @param   string  $ordering   An optional ordering field.
+	 * @param   string  $direction  An optional direction (asc|desc).
+	 *
 	 * @return  void
+	 *
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
@@ -222,32 +229,52 @@ class ComponentbuilderModelJoomla_plugins extends JModelList
 		{
 			$this->context .= '.' . $layout;
 		}
-		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
-		$this->setState('filter.system_name', $system_name);
 
-		$class_extends = $this->getUserStateFromRequest($this->context . '.filter.class_extends', 'filter_class_extends');
-		$this->setState('filter.class_extends', $class_extends);
+		// Check if the form was submitted
+		$formSubmited = $app->input->post->get('form_submited');
 
-		$joomla_plugin_group = $this->getUserStateFromRequest($this->context . '.filter.joomla_plugin_group', 'filter_joomla_plugin_group');
-		$this->setState('filter.joomla_plugin_group', $joomla_plugin_group);
-        
-		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
-		$this->setState('filter.sorting', $sorting);
-        
 		$access = $this->getUserStateFromRequest($this->context . '.filter.access', 'filter_access', 0, 'int');
-		$this->setState('filter.access', $access);
-        
-		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
-		$this->setState('filter.search', $search);
+		if ($formSubmited)
+		{
+			$access = $app->input->post->get('access');
+			$this->setState('filter.access', $access);
+		}
 
 		$published = $this->getUserStateFromRequest($this->context . '.filter.published', 'filter_published', '');
 		$this->setState('filter.published', $published);
-        
+
 		$created_by = $this->getUserStateFromRequest($this->context . '.filter.created_by', 'filter_created_by', '');
 		$this->setState('filter.created_by', $created_by);
 
 		$created = $this->getUserStateFromRequest($this->context . '.filter.created', 'filter_created');
 		$this->setState('filter.created', $created);
+
+		$sorting = $this->getUserStateFromRequest($this->context . '.filter.sorting', 'filter_sorting', 0, 'int');
+		$this->setState('filter.sorting', $sorting);
+
+		$search = $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search');
+		$this->setState('filter.search', $search);
+
+		$class_extends = $this->getUserStateFromRequest($this->context . '.filter.class_extends', 'filter_class_extends');
+		if ($formSubmited)
+		{
+			$class_extends = $app->input->post->get('class_extends');
+			$this->setState('filter.class_extends', $class_extends);
+		}
+
+		$joomla_plugin_group = $this->getUserStateFromRequest($this->context . '.filter.joomla_plugin_group', 'filter_joomla_plugin_group');
+		if ($formSubmited)
+		{
+			$joomla_plugin_group = $app->input->post->get('joomla_plugin_group');
+			$this->setState('filter.joomla_plugin_group', $joomla_plugin_group);
+		}
+
+		$system_name = $this->getUserStateFromRequest($this->context . '.filter.system_name', 'filter_system_name');
+		if ($formSubmited)
+		{
+			$system_name = $app->input->post->get('system_name');
+			$this->setState('filter.system_name', $system_name);
+		}
 
 		// List state information.
 		parent::populateState($ordering, $direction);
@@ -333,9 +360,17 @@ class ComponentbuilderModelJoomla_plugins extends JModelList
 		$query->select('ag.title AS access_level');
 		$query->join('LEFT', '#__viewlevels AS ag ON ag.id = a.access');
 		// Filter by access level.
-		if ($access = $this->getState('filter.access'))
+		$_access = $this->getState('filter.access');
+		if ($_access && is_numeric($_access))
 		{
-			$query->where('a.access = ' . (int) $access);
+			$query->where('a.access = ' . (int) $_access);
+		}
+		elseif (ComponentbuilderHelper::checkArray($_access))
+		{
+			// Secure the array for the query
+			$_access = ArrayHelper::toInteger($_access);
+			// Filter by the Access Array.
+			$query->where('a.access IN (' . implode(',', $_access) . ')');
 		}
 		// Implement View Level Access
 		if (!$user->authorise('core.options', 'com_componentbuilder'))
@@ -358,15 +393,39 @@ class ComponentbuilderModelJoomla_plugins extends JModelList
 			}
 		}
 
-		// Filter by class_extends.
-		if ($class_extends = $this->getState('filter.class_extends'))
+		// Filter by Class_extends.
+		$_class_extends = $this->getState('filter.class_extends');
+		if (is_numeric($_class_extends))
 		{
-			$query->where('a.class_extends = ' . $db->quote($db->escape($class_extends)));
+			if (is_float($_class_extends))
+			{
+				$query->where('a.class_extends = ' . (float) $_class_extends);
+			}
+			else
+			{
+				$query->where('a.class_extends = ' . (int) $_class_extends);
+			}
 		}
-		// Filter by joomla_plugin_group.
-		if ($joomla_plugin_group = $this->getState('filter.joomla_plugin_group'))
+		elseif (ComponentbuilderHelper::checkString($_class_extends))
 		{
-			$query->where('a.joomla_plugin_group = ' . $db->quote($db->escape($joomla_plugin_group)));
+			$query->where('a.class_extends = ' . $db->quote($db->escape($_class_extends)));
+		}
+		// Filter by Joomla_plugin_group.
+		$_joomla_plugin_group = $this->getState('filter.joomla_plugin_group');
+		if (is_numeric($_joomla_plugin_group))
+		{
+			if (is_float($_joomla_plugin_group))
+			{
+				$query->where('a.joomla_plugin_group = ' . (float) $_joomla_plugin_group);
+			}
+			else
+			{
+				$query->where('a.joomla_plugin_group = ' . (int) $_joomla_plugin_group);
+			}
+		}
+		elseif (ComponentbuilderHelper::checkString($_joomla_plugin_group))
+		{
+			$query->where('a.joomla_plugin_group = ' . $db->quote($db->escape($_joomla_plugin_group)));
 		}
 
 		// Add the list ordering clause.
@@ -392,12 +451,24 @@ class ComponentbuilderModelJoomla_plugins extends JModelList
 		$id .= ':' . $this->getState('filter.id');
 		$id .= ':' . $this->getState('filter.search');
 		$id .= ':' . $this->getState('filter.published');
+		// Check if the value is an array
+		$_access = $this->getState('filter.access');
+		if (ComponentbuilderHelper::checkArray($_access))
+		{
+			$id .= ':' . implode(':', $_access);
+		}
+		// Check if this is only an number or string
+		elseif (is_numeric($_access)
+		 || ComponentbuilderHelper::checkString($_access))
+		{
+			$id .= ':' . $_access;
+		}
 		$id .= ':' . $this->getState('filter.ordering');
 		$id .= ':' . $this->getState('filter.created_by');
 		$id .= ':' . $this->getState('filter.modified_by');
-		$id .= ':' . $this->getState('filter.system_name');
 		$id .= ':' . $this->getState('filter.class_extends');
 		$id .= ':' . $this->getState('filter.joomla_plugin_group');
+		$id .= ':' . $this->getState('filter.system_name');
 
 		return parent::getStoreId($id);
 	}
