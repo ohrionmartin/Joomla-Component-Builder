@@ -5,7 +5,7 @@
  * @created    30th April, 2015
  * @author     Llewellyn van der Merwe <http://www.joomlacomponentbuilder.com>
  * @github     Joomla Component Builder <https://github.com/vdm-io/Joomla-Component-Builder>
- * @copyright  Copyright (C) 2015 - 2020 Vast Development Method. All rights reserved.
+ * @copyright  Copyright (C) 2015 Vast Development Method. All rights reserved.
  * @license    GNU General Public License version 2 or later; see LICENSE.txt
  */
 
@@ -464,27 +464,6 @@ class Interpretation extends Fields
 
 		// return the genuine mentod statement
 		return implode(PHP_EOL, $bool);
-	}
-
-	/**
-	 * set Helper Dynamic Headers
-	 *
-	 * @param   string  $target_client
-	 *
-	 * @return string
-	 */
-	public function setHelperClassHeader($target_client)
-	{
-		$header = '';
-		// add only to admin client
-		if ('admin' === $target_client && $this->addEximport)
-		{
-			$header .= PHP_EOL . 'use PhpOffice\PhpSpreadsheet\IOFactory;';
-			$header .= PHP_EOL . 'use PhpOffice\PhpSpreadsheet\Spreadsheet;';
-			$header .= PHP_EOL . 'use PhpOffice\PhpSpreadsheet\Writer\Xlsx;';
-		}
-
-		return $header;
 	}
 
 	/**
@@ -8524,7 +8503,8 @@ class Interpretation extends Fields
 		if ($this->addAssetsTableFix == 2)
 		{
 			// get the type we will convert to
-			$data_type = ($this->accessWorseCase > 64000) ? "MEDIUMTEXT" : "TEXT";
+			$data_type = ($this->accessWorseCase > 64000) ? "MEDIUMTEXT"
+				: "TEXT";
 			// the if statement about $rule_length
 			$codeIF = "\$rule_length <= " . $this->accessWorseCase;
 			// fix column size
@@ -8534,7 +8514,8 @@ class Interpretation extends Fields
 			$script[] = $this->_t(5)
 				. '$fix_rules_size = "ALTER TABLE `#__assets` CHANGE `rules` `rules` '
 				. $data_type
-				. ' NOT NULL COMMENT \'JSON encoded access control. Enlarged to ' . $data_type . ' by JCB\';";';
+				. ' NOT NULL COMMENT \'JSON encoded access control. Enlarged to '
+				. $data_type . ' by JCB\';";';
 			$script[] = $this->_t(5) . "\$db->setQuery(\$fix_rules_size);";
 			$script[] = $this->_t(5) . "\$db->execute();";
 			$codeA    = implode(PHP_EOL, $script);
@@ -12135,7 +12116,6 @@ class Interpretation extends Fields
 		$COMPONENT = strtoupper($component);
 		// set uppercase view
 		$VIEWS = strtoupper($nameListCode);
-
 		// build the body
 		$body = array();
 		// check if the filter type is sidebar (1 = sidebar)
@@ -12165,6 +12145,14 @@ class Interpretation extends Fields
 			$body[] = $this->_t(1) . "}";
 			$body[] = "</script>";
 		}
+		// Trigger Event: jcb_ce_onSetDefaultViewsBodyTop
+		$this->triggerEvent(
+			'jcb_ce_onSetDefaultViewsBodyTop',
+			array(&$this,
+			      &$body,
+			      &$nameSingleCode,
+			      &$nameListCode)
+		);
 		$body[] = "<form action=\"<?php echo JRoute::_('index.php?option=com_"
 			. $component . "&view=" . $nameListCode
 			. "'); ?>\" method=\"post\" name=\"adminForm\" id=\"adminForm\">";
@@ -12178,11 +12166,31 @@ class Interpretation extends Fields
 		$body[] = "<?php else : ?>";
 		$body[] = $this->_t(1) . "<div id=\"j-main-container\">";
 		$body[] = "<?php endif; ?>";
+		// Trigger Event: jcb_ce_onSetDefaultViewsFormTop
+		$this->triggerEvent(
+			'jcb_ce_onSetDefaultViewsFormTop',
+			array(&$this,
+			      &$body,
+			      &$nameSingleCode,
+			      &$nameListCode)
+		);
 		// check if the filter type is sidebar (2 = topbar)
 		if (isset($this->adminFilterType[$nameListCode])
 			&& $this->adminFilterType[$nameListCode] == 2)
 		{
 			$body[] = "<?php";
+			// build code to add the trash helper layout
+			$addTrashHelper = $this->_t(1)
+				. "echo JLayoutHelper::render('trashhelper', \$this);";
+			// add the trash helper layout if found in JCB
+			if ($this->setTemplateAndLayoutData($addTrashHelper, $nameListCode))
+			{
+				$body[] = $this->_t(1) . "//" . $this->setLine(
+						__LINE__
+					) . " Add the trash helper layout";
+				$body[] = $addTrashHelper;
+			}
+			// add the new search toolbar ;)
 			$body[] = $this->_t(1) . "//" . $this->setLine(
 					__LINE__
 				) . " Add the searchtools";
@@ -12254,7 +12262,23 @@ class Interpretation extends Fields
 		$body[] = $this->_t(1)
 			. "<input type=\"hidden\" name=\"task\" value=\"\" />";
 		$body[] = $this->_t(1) . "<?php echo JHtml::_('form.token'); ?>";
+		// Trigger Event: jcb_ce_onSetDefaultViewsFormBottom
+		$this->triggerEvent(
+			'jcb_ce_onSetDefaultViewsFormBottom',
+			array(&$this,
+			      &$body,
+			      &$nameSingleCode,
+			      &$nameListCode)
+		);
 		$body[] = "</form>";
+		// Trigger Event: jcb_ce_onSetDefaultViewsBodyBottom
+		$this->triggerEvent(
+			'jcb_ce_onSetDefaultViewsBodyBottom',
+			array(&$this,
+			      &$body,
+			      &$nameSingleCode,
+			      &$nameListCode)
+		);
 
 		return implode(PHP_EOL, $body);
 	}
@@ -12510,9 +12534,7 @@ class Interpretation extends Fields
 	public function setEditBody(&$view)
 	{
 		// set view name
-		$nameSingleCode = ComponentbuilderHelper::safeString(
-			$view['settings']->name_single
-		);
+		$nameSingleCode = $view['settings']->name_single_code;
 		// main lang prefix
 		$langView = $this->langPrefix . '_'
 			. ComponentbuilderHelper::safeString($nameSingleCode, 'U');
@@ -12812,7 +12834,7 @@ class Interpretation extends Fields
 		$tabs = array();
 		// sort the tabs based on key order
 		ksort($this->tabCounter[$nameSingleCode]);
-		// start tab builinging loop
+		// start tab building loop
 		foreach ($this->tabCounter[$nameSingleCode] as $tabNr => $tabName)
 		{
 			$tabWidth  = 12;
@@ -13393,7 +13415,9 @@ class Interpretation extends Fields
 		}
 
 		// make sure we dont load it to a view with the name component (as this will cause conflict with Joomla conventions)
-		if ($nameSingleCode != 'component')
+		if ($nameSingleCode != 'component'
+			&& isset($this->hasPermissions[$nameSingleCode])
+			&& $this->hasPermissions[$nameSingleCode])
 		{
 			// set permissions tab lang
 			$tabLangName = $langView . '_PERMISSION';
@@ -13521,29 +13545,211 @@ class Interpretation extends Fields
 	 */
 	public function setLayout($nameSingleCode, $layoutName, $items, $type)
 	{
-		// first build the layout file
-		$target = array('admin' => $nameSingleCode);
-		$this->buildDynamique($target, $type, $layoutName);
-		// add to front if needed
-		if ($this->lang === 'both')
+		// we check if there is a local override
+		if (!$this->setLayoutOverride($nameSingleCode, $layoutName, $items))
 		{
-			$target = array('site' => $nameSingleCode);
+			// first build the layout file
+			$target = array('admin' => $nameSingleCode);
 			$this->buildDynamique($target, $type, $layoutName);
+			// add to front if needed
+			if ($this->lang === 'both')
+			{
+				$target = array('site' => $nameSingleCode);
+				$this->buildDynamique($target, $type, $layoutName);
+			}
+			if (ComponentbuilderHelper::checkString($items))
+			{
+				// LAYOUTITEMS <<<DYNAMIC>>>
+				$this->fileContentDynamic[$nameSingleCode . '_'
+				. $layoutName][$this->hhh . 'LAYOUTITEMS' . $this->hhh]
+					= $items;
+			}
+			else
+			{
+				// LAYOUTITEMS <<<DYNAMIC>>>
+				$this->fileContentDynamic[$nameSingleCode . '_'
+				. $layoutName][$this->hhh . 'bogus' . $this->hhh]
+					= 'boom';
+			}
 		}
-		if (ComponentbuilderHelper::checkString($items))
+	}
+
+	/**
+	 * @param   string  $nameSingleCode
+	 * @param   string  $layoutName
+	 * @param   string  $items
+	 *
+	 * @return  boolean  true if override was found
+	 */
+	protected function setLayoutOverride($nameSingleCode, $layoutName, $items)
+	{
+		if (($data = $this->getLayoutOverride($nameSingleCode, $layoutName))
+			!== false)
 		{
-			// LAYOUTITEMS <<<DYNAMIC>>>
+			// first build the layout file
+			$target = array('admin' => $nameSingleCode);
+			$this->buildDynamique($target, 'layoutoverride', $layoutName);
+			// add to front if needed
+			if ($this->lang === 'both')
+			{
+				$target = array('site' => $nameSingleCode);
+				$this->buildDynamique($target, 'layoutoverride', $layoutName);
+			}
+			// make sure items is an empty string (should not be needed.. but)
+			if (!ComponentbuilderHelper::checkString($items))
+			{
+				$items = '';
+			}
+			// set placeholder
+			$placeholder                                          = $this->placeholders;
+			$placeholder[$this->hhh . 'LAYOUTITEMS' . $this->hhh] = $items;
+			// OVERRIDE_LAYOUT_CODE <<<DYNAMIC>>>
+			$php_view = (array) explode(PHP_EOL, $data['php_view']);
+			if (ComponentbuilderHelper::checkArray($php_view))
+			{
+				$php_view = PHP_EOL . PHP_EOL . implode(PHP_EOL, $php_view);
+				$this->fileContentDynamic[$nameSingleCode . '_'
+				. $layoutName][$this->hhh
+				. 'OVERRIDE_LAYOUT_CODE' . $this->hhh]
+				          = $this->setPlaceholders(
+					$php_view, $placeholder
+				);
+			}
+			else
+			{
+				$this->fileContentDynamic[$nameSingleCode . '_'
+				. $layoutName][$this->hhh
+				. 'OVERRIDE_LAYOUT_CODE' . $this->hhh]
+					= '';
+			}
+			// OVERRIDE_LAYOUT_BODY <<<DYNAMIC>>>
 			$this->fileContentDynamic[$nameSingleCode . '_'
-			. $layoutName][$this->hhh . 'LAYOUTITEMS' . $this->hhh]
-				= $items;
+			. $layoutName][$this->hhh
+			. 'OVERRIDE_LAYOUT_BODY' . $this->hhh]
+				= PHP_EOL . $this->setPlaceholders(
+					$data['html'], $placeholder
+				);
+
+			// since override was found
+			return true;
 		}
-		else
+
+		return false;
+	}
+
+	/**
+	 * @param   string  $nameSingleCode
+	 * @param   string  $layoutName
+	 *
+	 * @return  array  the layout data
+	 */
+	protected function getLayoutOverride($nameSingleCode, $layoutName)
+	{
+		// check if there is an override by component name, view name, & layout name
+		if ($this->setTemplateAndLayoutData(
+			'override', $nameSingleCode, false, array(''),
+			array($this->componentCodeName . $nameSingleCode . $layoutName)
+		))
 		{
-			// LAYOUTITEMS <<<DYNAMIC>>>
-			$this->fileContentDynamic[$nameSingleCode . '_'
-			. $layoutName][$this->hhh . 'bogus' . $this->hhh]
-				= 'boom';
+			$data = $this->layoutData[$this->target][$this->componentCodeName
+			. $nameSingleCode . $layoutName];
+			// remove since we will add the layout now
+			if ($this->lang === 'both')
+			{
+				unset(
+					$this->layoutData['admin'][$this->componentCodeName
+					. $nameSingleCode . $layoutName]
+				);
+				unset(
+					$this->layoutData['site'][$this->componentCodeName
+					. $nameSingleCode . $layoutName]
+				);
+			}
+			else
+			{
+				unset(
+					$this->layoutData[$this->target][$this->componentCodeName
+					. $nameSingleCode . $layoutName]
+				);
+			}
+
+			return $data;
 		}
+		// check if there is an override by component name & layout name
+		elseif ($this->setTemplateAndLayoutData(
+			'override', $nameSingleCode, false, array(''),
+			array($this->componentCodeName . $layoutName)
+		))
+		{
+			$data = $this->layoutData[$this->target][$this->componentCodeName
+			. $layoutName];
+			// remove since we will add the layout now
+			if ($this->lang === 'both')
+			{
+				unset(
+					$this->layoutData['admin'][$this->componentCodeName
+					. $layoutName]
+				);
+				unset(
+					$this->layoutData['site'][$this->componentCodeName
+					. $layoutName]
+				);
+			}
+			else
+			{
+				unset(
+					$this->layoutData[$this->target][$this->componentCodeName
+					. $layoutName]
+				);
+			}
+
+			return $data;
+		}
+		// check if there is an override by view & layout name
+		elseif ($this->setTemplateAndLayoutData(
+			'override', $nameSingleCode, false, array(''),
+			array($nameSingleCode . $layoutName)
+		))
+		{
+			$data = $this->layoutData[$this->target][$nameSingleCode
+			. $layoutName];
+			// remove since we will add the layout now
+			if ($this->lang === 'both')
+			{
+				unset(
+					$this->layoutData['admin'][$nameSingleCode . $layoutName]
+				);
+				unset($this->layoutData['site'][$nameSingleCode . $layoutName]);
+			}
+			else
+			{
+				unset($this->layoutData[$this->target][$layoutName]);
+			}
+
+			return $data;
+		}
+		// check if there is an override by layout name (global layout)
+		elseif ($this->setTemplateAndLayoutData(
+			'override', $nameSingleCode, false, array(''),
+			array($layoutName)
+		))
+		{
+			$data = $this->layoutData[$this->target][$layoutName];
+			// remove since we will add the layout now
+			if ($this->lang === 'both')
+			{
+				unset($this->layoutData['admin'][$layoutName]);
+				unset($this->layoutData['site'][$layoutName]);
+			}
+			else
+			{
+				unset($this->layoutData[$this->target][$layoutName]);
+			}
+
+			return $data;
+		}
+
+		return false;
 	}
 
 	/**
@@ -22115,7 +22321,7 @@ class Interpretation extends Fields
 	}
 
 	/**
-	 * Build headers for the model/view/controller headers
+	 * Build headers for the various files
 	 *
 	 * @param   string  $context        The name of the context
 	 * @param   string  $viewsCodeName  The view or views name
@@ -22123,12 +22329,25 @@ class Interpretation extends Fields
 	 * @return  string The php to place in the header
 	 *
 	 */
-	public function setClassHeaders($context, $viewsCodeName)
+	public function setFileHeader($context, $viewsCodeName)
 	{
 		// set the defaults
 		$headers = array();
 		switch ($context)
 		{
+			case 'admin.component':
+			case 'site.component':
+				$headers[] = 'JHtml::_(\'behavior.tabstate\');';
+				break;
+			case 'admin.helper':
+			case 'site.helper':
+				$headers[] = 'use Joomla\CMS\Language\Language;';
+				$headers[] = 'use Joomla\Registry\Registry;';
+				$headers[] = 'use Joomla\String\StringHelper;';
+				$headers[] = 'use Joomla\Utilities\ArrayHelper;';
+				// load the internal custom headers
+				$this->setHelperClassHeader($headers, $viewsCodeName);
+				break;
 			case 'admin.view.model':
 			case 'site.admin.view.model':
 				$headers[] = 'use Joomla\Registry\Registry;';
@@ -22181,6 +22400,25 @@ class Interpretation extends Fields
 		}
 
 		return '';
+	}
+
+	/**
+	 * set Helper Dynamic Headers
+	 *
+	 * @param   array   $headers  The headers array
+	 * @param   string  $target_client
+	 *
+	 * @return void
+	 */
+	protected function setHelperClassHeader(&$headers, $target_client)
+	{
+		// add only to admin client
+		if ('admin' === $target_client && $this->addEximport)
+		{
+			$headers[] = 'use PhpOffice\PhpSpreadsheet\IOFactory;';
+			$headers[] = 'use PhpOffice\PhpSpreadsheet\Spreadsheet;';
+			$headers[] = 'use PhpOffice\PhpSpreadsheet\Writer\Xlsx;';
+		}
 	}
 
 	/**
@@ -27187,7 +27425,7 @@ function vdm_dkim() {
 			{
 				// get the worse case column size required (can be worse I know)
 				// access/action size x 20 characters x 8 groups
-				$character_length = (int) ComponentbuilderHelper::bcmath(
+				$character_length      = (int) ComponentbuilderHelper::bcmath(
 					'mul', $this->accessSize, 20, 0
 				);
 				$this->accessWorseCase = (int) ComponentbuilderHelper::bcmath(
