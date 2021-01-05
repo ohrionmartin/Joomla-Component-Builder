@@ -5,7 +5,7 @@
  * @created    30th April, 2015
  * @author     Llewellyn van der Merwe <http://www.joomlacomponentbuilder.com>
  * @github     Joomla Component Builder <https://github.com/vdm-io/Joomla-Component-Builder>
- * @copyright  Copyright (C) 2015 - 2020 Vast Development Method. All rights reserved.
+ * @copyright  Copyright (C) 2015 Vast Development Method. All rights reserved.
  * @license    GNU General Public License version 2 or later; see LICENSE.txt
  */
 
@@ -1983,7 +1983,8 @@ abstract class ComponentbuilderHelper
 				'<a href="https://vdm.bz/joomla-volunteers" target="_blank" title="Joomla! Volunteers Portal"><img src="https://cdn.joomla.org/volunteers/joomla-heart-wide.gif" alt="Joomla! Volunteers Portal" width="728" height="90" border="0"></a>',
 				'<a href="https://vdm.bz/joomla-magazine" target="_blank" title="Joomla! Community Magazine | Because community matters..."><img alt="Joomla! Community Magazine | Because community matters..." src="https://magazine.joomla.org/images/banners/JCM_2010_728x90.png" width="728" height="90" border="0" /></a>',
 				'<a href="https://vdm.bz/jcb-sponsor-tlwebdesign" target="_blank" title="tlwebdesign a JCB sponsor | Because community matters..."><img alt="tlwebdesign a JCB sponsor | Because community matters..." src="https://www.joomlacomponentbuilder.com/images/banners/tlwebdesign_jcb_sponsor_728_90.png" width="728" height="90" border="0" /></a>',
-				'<a href="https://vdm.bz/jcb-sponsor-vdm" target="_blank" title="VDM a JCB sponsor | Because community matters..."><img alt="VDM a JCB sponsor | Because community matters..." src="https://www.joomlacomponentbuilder.com/images/banners/vdm_jcb_sponsor_728_90.gif" width="728" height="90" border="0" /></a>'
+				'<a href="https://vdm.bz/jcb-sponsor-vdm" target="_blank" title="VDM a JCB sponsor | Because community matters..."><img alt="VDM a JCB sponsor | Because community matters..." src="https://www.joomlacomponentbuilder.com/images/banners/vdm_jcb_sponsor_728_90.gif" width="728" height="90" border="0" /></a>',
+				'<a href="https://vdm.bz/jcb-sponsor-agerix" target="_blank" title="Agerix a JCB sponsor | Because community matters..."><img alt="Agerix a JCB sponsor | Because community matters..." src="https://allmycms.com/images/banners/agerix/agerix-loves-jcb-728-90.gif" width="728" height="90" border="0" /></a>'
 			),
 			'160-600' => array(
 				'<a href="https://vdm.bz/joomla-volunteers" target="_blank" title="Joomla! Volunteers Portal"><img src="https://cdn.joomla.org/volunteers/joomla-heart-tall.gif" alt="Joomla! Volunteers Portal" width="160" height="600" border="0"></a>',
@@ -3676,7 +3677,7 @@ abstract class ComponentbuilderHelper
 		),
 		'plain' => array(
 			'cachehandler', 'calendar', 'checkbox', 'chromestyle', 'color', 'componentlayout', 'contenttype', 'editor', 'editors', 'captcha',
-			'email', 'file', 'headertag', 'helpsite', 'hidden', 'integer', 'language', 'media', 'menu', 'menuitem', 'meter', 'modulelayout',
+			'email', 'file', 'headertag', 'helpsite', 'hidden', 'integer', 'language', 'media', 'menu', 'menuitem', 'meter', 'modulelayout', 'templatestyle',
 			'moduleorder', 'moduletag', 'number', 'password', 'range', 'rules', 'tag', 'tel', 'text', 'textarea', 'timezone', 'url', 'user', 'usergroup'
 		),
 		'option' => array(
@@ -3696,7 +3697,7 @@ abstract class ComponentbuilderHelper
 			'note', 'spacer'
 		),
 		'special' => array(
-			'contentlanguage', 'moduleposition', 'plugin', 'repeatable', 'subform', 'templatestyle'
+			'contentlanguage', 'moduleposition', 'plugin', 'repeatable', 'subform'
 		)
 	);
 

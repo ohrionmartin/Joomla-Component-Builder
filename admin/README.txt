@@ -12,7 +12,7 @@ The Component Builder for [Joomla](https://extensions.joomla.org/extension/compo
 
 Whether you're a seasoned [Joomla](https://extensions.joomla.org/extension/component-builder/) developer, or have just started, Component Builder will save you lots of time and money. A real must have!
 
-You can install it quite easily and with no limitations. On [github](https://github.com/vdm-io/Joomla-Component-Builder/releases) is the latest release (2.12.3) with **ALL** its features and **ALL** concepts totally open-source and free! 
+You can install it quite easily and with no limitations. On [github](https://github.com/vdm-io/Joomla-Component-Builder/releases) is the latest release (2.12.4) with **ALL** its features and **ALL** concepts totally open-source and free! 
 
 > Watch Quick Build of a Hello World component in [JCB on Youtube](https://www.youtube.com/watch?v=IQfsLYIeblk&list=PLQRGFI8XZ_wtGvPQZWBfDzzlERLQgpMRE&index=45)
 
@@ -106,7 +106,7 @@ Where can you get support and help?
 + [German Basic Introduction](https://www.youtube.com/playlist?list=PLQRGFI8XZ_wu0tDFxJtZFwW7AxA4JHQV7)
 + [Hello World Tutorial](https://www.youtube.com/watch?v=IQfsLYIeblk&list=PLQRGFI8XZ_wtGvPQZWBfDzzlERLQgpMRE&index=45)
 + [The JCB! Wiki](https://github.com/vdm-io/Joomla-Component-Builder/wiki)
-+ [Google Group](https://vdm.bz/jcb-forum)
++ [Forum](https://vdm.bz/jcb-forum)
 + [Report a Security Issue](http://joomlacomponentbuilder.com/report-security-issues)
 + [Community Complaint](http://joomlacomponentbuilder.com/community-complaint)
 + [Open Issue On Github](https://github.com/vdm-io/Joomla-Component-Builder/issues) ^^
@@ -143,14 +143,14 @@ TODO
 + *Author*: [Llewellyn van der Merwe](mailto:llewellyn@joomlacomponentbuilder.com)
 + *Name*: [Component Builder](https://github.com/vdm-io/Joomla-Component-Builder)
 + *First Build*: 30th April, 2015
-+ *Last Build*: 13th December, 2020
-+ *Version*: 2.12.3
-+ *Copyright*: Copyright (C) 2015 - 2020 Vast Development Method. All rights reserved.
++ *Last Build*: 3rd January, 2021
++ *Version*: 2.12.4
++ *Copyright*: Copyright (C) 2015 Vast Development Method. All rights reserved.
 + *License*: GNU General Public License version 2 or later; see LICENSE.txt
-+ *Line count*: **290479**
-+ *Field count*: **1555**
-+ *File count*: **1923**
-+ *Folder count*: **316**
++ *Line count*: **291460**
++ *Field count*: **1609**
++ *File count*: **1934**
++ *Folder count*: **322**
 
 > This **component** was build with a [Joomla](https://extensions.joomla.org/extension/component-builder/) [Automated Component Builder](http://joomlacomponentbuilder.com).
 > Developed by [Llewellyn van der Merwe](mailto:llewellyn@joomlacomponentbuilder.com)
