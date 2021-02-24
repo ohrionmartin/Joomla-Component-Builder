@@ -296,6 +296,8 @@ class ComponentbuilderViewJoomla_components extends JViewLegacy
 			'a.name_code' => JText::_('COM_COMPONENTBUILDER_JOOMLA_COMPONENT_NAME_CODE_LABEL'),
 			'a.short_description' => JText::_('COM_COMPONENTBUILDER_JOOMLA_COMPONENT_SHORT_DESCRIPTION_LABEL'),
 			'a.companyname' => JText::_('COM_COMPONENTBUILDER_JOOMLA_COMPONENT_COMPANYNAME_LABEL'),
+			'a.created' => JText::_('COM_COMPONENTBUILDER_JOOMLA_COMPONENT_CREATED_LABEL'),
+			'a.modified' => JText::_('COM_COMPONENTBUILDER_JOOMLA_COMPONENT_MODIFIED_LABEL'),
 			'a.id' => JText::_('JGRID_HEADING_ID')
 		);
 	}

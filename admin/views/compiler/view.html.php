@@ -37,8 +37,37 @@ class ComponentbuilderViewCompiler extends JViewLegacy
 			JHtmlSidebar::setAction('index.php?option=com_componentbuilder&view=compiler');
 			$this->sidebar = JHtmlSidebar::render();
 		}
-		$this->Components 	= $this->get('Components');
-		$this->form		= $this->setForm();
+		$this->Components = $this->get('Components');
+		$this->form = $this->setForm();
+		// set the compiler artwork from global settings
+		$this->builder_gif_size = $this->params->get('builder_gif_size', '480-272');
+		// only run these checks if he has access
+		if ($this->canDo->get('compiler.compiler_animations'))
+		{
+			// if the new artwork is not being targeted hide download option of artwork
+			if ('480-540' !== $this->builder_gif_size)
+			{
+				$this->canDo->set('compiler.compiler_animations', false);
+			}
+			// we count of all the files are already there
+			else
+			{
+				// get all the gif files in the gif folder
+				$all_gifs = scandir(JPATH_ROOT . "/administrator/components/com_componentbuilder/assets/images/builder-gif");
+				// check if we have any values
+				if (ComponentbuilderHelper::checkArray($all_gifs))
+				{
+					// count number of files but remove the 2 dot values
+					$num_gifs = count($all_gifs) - 2;
+					// if we have more or the same number of files that are in the array, the we hide the download option
+					if ($num_gifs >= ComponentbuilderHelper::getDynamicContentSize('builder-gif', '480-540'))
+					{
+						$this->canDo->set('compiler.compiler_animations', false);
+					}
+				}
+			}
+		}
+		
 
 		// We don't need toolbar in the modal window.
 		if ($this->getLayout() !== 'modal')
@@ -60,8 +89,8 @@ class ComponentbuilderViewCompiler extends JViewLegacy
 	}
 
 	// These are subform layouts used in JCB
-	// JLayoutHelper::render('sectionjcb', [?]); // added to ensure the layout is loaded
-	// JLayoutHelper::render('repeatablejcb', [?]); // added to ensure the layout is loaded
+	// JLayoutHelper::render('sectionjcb', [?]); // added to ensure the layout are loaded
+	// JLayoutHelper::render('repeatablejcb', [?]); // added to ensure the layout are loaded
 
 	public function setForm()
 	{		
@@ -277,30 +306,30 @@ class ComponentbuilderViewCompiler extends JViewLegacy
 				jQuery.get(noticeboard)
 				.success(function(board) { 
 					if (board.length > 5) {
-						jQuery(\"#noticeboard-md\").html(marked(board));
+						jQuery(\".noticeboard-md\").html(marked(board));
 						getIS(1,board).done(function(result) {
 							if (result){
-								jQuery(\"#vdm-new-notice\").show();
+								jQuery(\".vdm-new-notice\").show();
 								getIS(2,board);
 							}
 						});
 					} else {
-						jQuery(\"#noticeboard-md\").html(all_is_good);
+						jQuery(\".noticeboard-md\").html(all_is_good);
 					}
 				})
 				.error(function(jqXHR, textStatus, errorThrown) { 
-					jQuery(\"#noticeboard-md\").html(all_is_good);
+					jQuery(\".noticeboard-md\").html(all_is_good);
 				});
 				jQuery.get(proboard)
 				.success(function(board) { 
 					if (board.length > 5) {
-						jQuery(\"#proboard-md\").html(marked(board));
+						jQuery(\".proboard-md\").html(marked(board));
 					} else {
-						jQuery(\"#proboard-md\").html(all_is_good);
+						jQuery(\".proboard-md\").html(all_is_good);
 					}
 				})
 				.error(function(jqXHR, textStatus, errorThrown) { 
-					jQuery(\"#proboard-md\").html(all_is_good);
+					jQuery(\".proboard-md\").html(all_is_good);
 				});
 			});
 			// to check is READ/NEW
@@ -345,6 +374,11 @@ class ComponentbuilderViewCompiler extends JViewLegacy
 		{
 			// add Translate button.
 			JToolBarHelper::custom('compiler.runTranslator', 'comments-2 custom-button-runtranslator', '', 'COM_COMPONENTBUILDER_TRANSLATE', false);
+		}
+		if ($this->canDo->get('compiler.compiler_animations'))
+		{
+			// add Compiler Animations button.
+			JToolBarHelper::custom('compiler.getCompilerAnimations', 'download custom-button-getcompileranimations', '', 'COM_COMPONENTBUILDER_COMPILER_ANIMATIONS', false);
 		}
 		if ($this->canDo->get('compiler.clear_tmp'))
 		{

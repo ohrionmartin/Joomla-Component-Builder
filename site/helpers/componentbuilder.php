@@ -1969,502 +1969,242 @@ abstract class ComponentbuilderHelper
 	}
 
 	/**
-	* get translation extention ids
-	**/
-	public static function getTranslationExtensionsIds($extention, $type)
-	{
-		// only allow these columns (extention types)
-		$columns = array(
-			'joomla_component' => 'components',
-			'joomla_module' => 'modules',
-			'joomla_plugin' => 'plugins'
-		);
-		// check if the column name is correct
-		if (isset($columns[$type]))
-		{
-			$column = $columns[$type];
-			$db = JFactory::getDbo();
-			$query = $db->getQuery(true);
-			$query
-				->select($db->quoteName(array('id', $column)))
-				->from($db->quoteName('#__componentbuilder_language_translation'))
-				->where($db->quoteName($column) . ' != ' . $db->quote(''));
-			$db->setQuery($query);
-			$db->execute();
-			if ($db->getNumRows())
-			{
-				$results = $db->loadAssocList();
-				$matches = array();
-				foreach ($results as $k => $v)
-				{
-					$value = json_decode($v[$column], true);
-					if (in_array($extention, $value))
-					{
-						$matches[$v['id']] = $v['id'];
-					}
-				}
-				// Checks that we found matches
-				if (self::checkArray($matches))
-				{
-					return array_values($matches);
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	* get translation ids
-	**/
-	public static function getTranslationIds($language, $translated = true)
-	{
-		$db = JFactory::getDbo();
-		$query = $db->getQuery(true);
-
-		$query
-			->select($db->quoteName('id'))
-			->from($db->quoteName('#__componentbuilder_language_translation'));
-
-		// Build the where condition
-		if ($translated === true) // Translated
-		{
-			if ($language === 'all')
-			{
-				if (($languages = self::getAvailableLanguages()) !== false)
-				{
-					$wheres = array();
-					foreach ($languages as $k => $v)
-					{
-						$wheres[] = $db->quoteName('translation') . ' LIKE ' . $db->quote('%' . $k . '%');
-					}
-					$query->where($wheres);
-				}
-			}
-			else
-			{
-				$query->where($db->quoteName('translation') . ' LIKE ' . $db->quote('%' . $language . '%'));
-			}
-		}
-		else // Not translated
-		{
-			if ($language === 'none')
-			{
-				$query->where(
-					array(
-						$db->quoteName('translation') . ' = ' . $db->quote(''),
-						$db->quoteName('translation') . ' = ' . $db->quote('[]'),
-						$db->quoteName('translation') . ' = ' . $db->quote('{}')
-					), 'OR'
-				);
-			}
-			else
-			{
-				$query->where($db->quoteName('translation') . ' NOT LIKE ' . $db->quote('%' . $language . '%'));
-			}
-		}
-
-		$db->setQuery($query);
-		$db->execute();
-		if ($db->getNumRows())
-		{
-			return array_unique($db->loadColumn());
-		}
-		return false;
-	}
-
-	/**
-	* get available languages
-	**/
-	public static function getAvailableLanguages()
-	{
-		$db = JFactory::getDbo();
-		$query = $db->getQuery(true);
-		$query
-			->select($db->quoteName(array('langtag', 'name')))
-			->from($db->quoteName('#__componentbuilder_language'))
-			->where($db->quoteName('published') . ' = 1')
-			->order($db->quoteName('name') . ' desc');
-		$db->setQuery($query);
-		$db->execute();
-		if ($db->getNumRows())
-		{
-			return $db->loadAssocList('langtag', 'name');
-		}
-		return false;
-	}
-
-	/**
-	* get extensions grouped list xml
-	**/
-	public static function getExtensionGroupedListXml()
-	{
-		// the extension types
-		$extensions = array(
-			'joomla_component' => 'COM_COMPONENTBUILDER_COMPONENT',
-			'joomla_module' => 'COM_COMPONENTBUILDER_MODULE',
-			'joomla_plugin' => 'COM_COMPONENTBUILDER_PLUGIN'
-		);
-		// get the extension values
-		foreach ($extensions as $extension => $label)
-		{
-			${$extension} = self::getExtensionTypeIdSystemName($extension);
-		}
-
-		$xml = new DOMDocument();
-		$xml->formatOutput = true;
-
-		$root = $xml->createElement('field');
-		$root->setAttributeNode(new DOMAttr('name', 'extension'));
-		$root->setAttributeNode(new DOMAttr('type', 'groupedlist'));
-		$root->setAttributeNode(new DOMAttr('onchange', 'this.form.submit();'));
-
-		$root
-			->appendChild($xml->createElement('option', '- ' . JText::_('COM_COMPONENTBUILDER_SELECT_EXTENSION') . ' -'))
-			->setAttributeNode(new DOMAttr('value', ''));
-
-		foreach ($extensions as $extension => $label)
-		{
-			$extension_node = $xml->createElement('group');
-			$extension_node->setAttributeNode(new DOMAttr('label', $label));
-			if (!self::checkArray(${$extension}))
-			{
-				$extension_node
-					->appendChild($xml->createElement('option', '- ' . JText::_('COM_COMPONENTBUILDER_NONE') . ' -'))
-					->setAttributeNode(new DOMAttr('disabled', 'true'));
-			}
-			else
-			{
-				foreach (${$extension} as $id => $element)
-				{
-					$extension_node
-						->appendChild($xml->createElement('option', $element))
-						->setAttributeNode(new DOMAttr('value', $extension . '__' . $id));
-				}
-			}
-			$root->appendChild($extension_node);
-		}
-		$xml->appendChild($root);
-		return $xml->saveXML();
-	}
-
-	/**
-	* get extentions ids and system names
-	**/
-	public static function getExtensionTypeIdSystemName($type, $limiter = null)
-	{
-		$db = JFactory::getDbo();
-		$query = $db->getQuery(true);
-
-		$query
-			->select($db->quoteName(array('id', 'system_name')))
-			->from($db->quoteName('#__componentbuilder_' . $type))
-			->where($db->quoteName('published') . ' >= 1')
-			->order($db->quoteName('modified') . ' desc')
-			->order($db->quoteName('created') . ' desc');
-		// check if we have a limter for admin views
-		if ($type === 'admin_view' && $limiter)
-		{
-			// first get all views
-			$adminviewIds = array();
-			// if this is a plugin or a module, then no views
-			if (strpos($limiter, 'joomla_component') !== false)
-			{
-				$component = (int) str_replace('joomla_component__', '', $limiter);
-				// get the views of this component
-				if ($addViews = self::getVar('component_admin_views', (int) $component, 'joomla_component', 'addadmin_views'))
-				{
-					if (self::checkJson($addViews))
-					{
-						$addViews = json_decode($addViews, true);
-						if (self::checkArray($addViews))
-						{
-							foreach($addViews as $addView)
-							{
-								if (isset($addView['adminview']))
-								{
-									$adminviewIds[(int) $addView['adminview']] = (int) $addView['adminview'];
-								}
-							}
-						}
-					}
-				}
-			}
-			// now check if we still have admin views
-			if (self::checkArray($adminviewIds))
-			{
-				$query->where($db->quoteName('id') . ' IN (' . implode(',', $adminviewIds) . ')');
-			}
-			else
-			{
-				return false;
-			}
-		}
-		$db->setQuery($query);
-		$db->execute();
-		if ($db->getNumRows())
-		{
-			return $db->loadAssocList('id', 'system_name');
-		}
-		return false;
-	}
-
-	/**
-	 * get any extension field IDs
-	 */
-	public static function getExtensionFieldIDs($extension, $type)
-	{
-		// yes we use switches
-		switch ($type)
-		{
-			case 'joomla_component':
-				return self::getComponentFieldsIDs($extension);
-			break;
-			case 'joomla_module':
-				return self::getModuleFieldsIDs($extension);
-			break;
-			case 'joomla_plugin':
-				return self::getPluginFieldsIDs($extension);
-			break;
-			case 'admin_view':
-				return self::getAdminViewFieldsIDs($extension);
-			break;
-			default:
-				return false;
-			break;
-		}
-	}
-
-	/**
-	 * get a component fields IDs
-	 */
-	public static function getComponentFieldsIDs($id)
-	{
-		// we start the field array
-		$fieldIds = array();
-		// first get all views
-		$adminviewIds = array();
-		// get the views of this component
-		if ($addViews = self::getVar('component_admin_views', (int) $id, 'joomla_component', 'addadmin_views'))
-		{
-			if (self::checkJson($addViews))
-			{
-				$addViews = json_decode($addViews, true);
-				if (self::checkArray($addViews))
-				{
-					foreach($addViews as $addView)
-					{
-						if (isset($addView['adminview']))
-						{
-							$adminviewIds[(int) $addView['adminview']] = (int) $addView['adminview'];
-						}
-					}
-				}
-			}
-		}
-		// check that we have views
-		if (self::checkArray($adminviewIds))
-		{
-			foreach ($adminviewIds as $adminView)
-			{
-				// get all the fields linked to the admin view
-				if ($addFields = self::getVar('admin_fields', (int) $adminView, 'admin_view', 'addfields'))
-				{
-					if (self::checkJson($addFields))
-					{
-						$addFields = json_decode($addFields, true);
-						if (self::checkArray($addFields))
-						{
-							foreach($addFields as $addField)
-							{
-								if (isset($addField['field']))
-								{
-									$fieldIds[(int) $addField['field']] = (int) $addField['field'];
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		// get config values
-		if ($addconfig = self::getVar('component_config', (int) $id, 'joomla_component', 'addconfig'))
-		{
-			if (self::checkJson($addconfig))
-			{
-				$addconfig = json_decode($addconfig, true);
-				if (self::checkArray($addconfig))
-				{
-					foreach($addconfig as $addconf)
-					{
-						if (isset($addconf['field']))
-						{
-							$fieldIds[(int) $addconf['field']] = (int) $addconf['field'];
-						}
-					}
-				}
-			}
-		}
-		// check that we have fields
-		if (self::checkArray($fieldIds))
-		{
-			return array_values($fieldIds);
-		}
-		return false;
-	}
-
-	/**
-	 * get a module fields IDs
-	 */
-	public static function getModuleFieldsIDs($id)
-	{
-		// we start the field array
-		$fieldIds = array();
-		if ($fields = self::getVar('joomla_module', (int) $id, 'id', 'fields'))
-		{
-			if (self::checkJson($fields))
-			{
-				$fields = json_decode($fields, true);
-				if (self::checkArray($fields))
-				{
-					foreach($fields as $form)
-					{
-						if (isset($form['fields']) && self::checkArray($form['fields']))
-						{
-							foreach ($form['fields'] as $field)
-							{
-								if (isset($field['field']))
-								{
-									$fieldIds[(int) $field['field']] = (int) $field['field'];
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		// check that we have fields
-		if (self::checkArray($fieldIds))
-		{
-			return array_values($fieldIds);
-		}
-		return false;
-	}
-
-	/**
-	 * get a plugin fields IDs
-	 */
-	public static function getPluginFieldsIDs($id)
-	{
-		// we start the field array
-		$fieldIds = array();
-		if ($fields = self::getVar('joomla_plugin', (int) $id, 'id', 'fields'))
-		{
-			if (self::checkJson($fields))
-			{
-				$fields = json_decode($fields, true);
-				if (self::checkArray($fields))
-				{
-					foreach($fields as $form)
-					{
-						if (isset($form['fields']) && self::checkArray($form['fields']))
-						{
-							foreach ($form['fields'] as $field)
-							{
-								if (isset($field['field']))
-								{
-									$fieldIds[(int) $field['field']] = (int) $field['field'];
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		// check that we have fields
-		if (self::checkArray($fieldIds))
-		{
-			return array_values($fieldIds);
-		}
-		return false;
-	}
-
-	/**
-	 * get an admin view fields IDs
-	 */
-	public static function getAdminViewFieldsIDs($id)
-	{
-		// we start the field array
-		$fieldIds = array();
-		// get all the fields linked to the admin view
-		if ($addFields = self::getVar('admin_fields', (int) $id, 'admin_view', 'addfields'))
-		{
-			if (self::checkJson($addFields))
-			{
-				$addFields = json_decode($addFields, true);
-				if (self::checkArray($addFields))
-				{
-					foreach($addFields as $addField)
-					{
-						if (isset($addField['field']))
-						{
-							$fieldIds[(int) $addField['field']] = (int) $addField['field'];
-						}
-					}
-				}
-			}
-		}
-		// check that we have fields
-		if (self::checkArray($fieldIds))
-		{
-			return array_values($fieldIds);
-		}
-		return false;
-	}
-	/**
 	 * The array of dynamic content
 	 * 
 	 * @var     array
 	 */
 	protected static $dynamicContent = array(
-		// The banners by size
+		// The banners by size (width - height)
 		'banner' => array(
 			'728-90' => array(
-				'<a href="https://vdm.bz/joomla-volunteers" target="_blank" title="Joomla! Volunteers Portal"><img src="https://cdn.joomla.org/volunteers/joomla-heart-wide.gif" alt="Joomla! Volunteers Portal" width="728" height="90" border="0"></a>',
-				'<a href="https://vdm.bz/joomla-magazine" target="_blank" title="Joomla! Community Magazine | Because community matters..."><img alt="Joomla! Community Magazine | Because community matters..." src="https://magazine.joomla.org/images/banners/JCM_2010_728x90.png" width="728" height="90" border="0" /></a>',
-				'<a href="https://vdm.bz/jcb-sponsor-tlwebdesign" target="_blank" title="tlwebdesign a JCB sponsor | Because community matters..."><img alt="tlwebdesign a JCB sponsor | Because community matters..." src="https://www.joomlacomponentbuilder.com/images/banners/tlwebdesign_jcb_sponsor_728_90.png" width="728" height="90" border="0" /></a>',
-				'<a href="https://vdm.bz/jcb-sponsor-vdm" target="_blank" title="VDM a JCB sponsor | Because community matters..."><img alt="VDM a JCB sponsor | Because community matters..." src="https://www.joomlacomponentbuilder.com/images/banners/vdm_jcb_sponsor_728_90.gif" width="728" height="90" border="0" /></a>',
-				'<a href="https://vdm.bz/jcb-sponsor-agerix" target="_blank" title="Agerix a JCB sponsor | Because community matters..."><img alt="Agerix a JCB sponsor | Because community matters..." src="https://allmycms.com/images/banners/agerix/agerix-loves-jcb-728-90.gif" width="728" height="90" border="0" /></a>'
+				array(
+					'url' => 'https://cdn.joomla.org/volunteers/joomla-heart-wide.gif',
+					'hash' => 'f857e3a38facaeac9eba3cffa912b620',
+					'html' => '<a href="https://vdm.bz/joomla-volunteers" target="_blank" title="Joomla! Volunteers Portal"><img class="jcb-sponsor-banner" src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/joomla-heart-wide.gif" alt="Joomla! Volunteers Portal" width="728" height="90" border="0"></a>'),
+				array(
+					'url' => 'https://magazine.joomla.org/images/banners/JCM_2010_728x90.png',
+					'hash' => '4083c66f996279fd5a76adffc3a7d194',
+					'html' => '<a href="https://vdm.bz/joomla-magazine" target="_blank" title="Joomla! Community Magazine | Because community matters..."><img class="jcb-sponsor-banner" alt="Joomla! Community Magazine | Because community matters..." src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/JCM_2010_728x90.png" width="728" height="90" border="0" /></a>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/banners/tlwebdesign_jcb_sponsor_728_90.png',
+					'hash' => 'd19be1f9f5b2049ff901096aafc246be',
+					'html' => '<a href="https://vdm.bz/jcb-sponsor-tlwebdesign" target="_blank" title="tlwebdesign a JCB sponsor | Because community matters..."><img class="jcb-sponsor-banner" alt="tlwebdesign a JCB sponsor | Because community matters..." src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/tlwebdesign_jcb_sponsor_728_90.png" width="728" height="90" border="0" /></a>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/banners/vdm_jcb_sponsor_728_90.gif',
+					'hash' => '84478dfa0cd880395815e0ee026812a4',
+					'html' => '<a href="https://vdm.bz/jcb-sponsor-vdm" target="_blank" title="VDM a JCB sponsor | Because community matters..."><img class="jcb-sponsor-banner" alt="VDM a JCB sponsor | Because community matters..." src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/vdm_jcb_sponsor_728_90.gif" width="728" height="90" border="0" /></a>'),
+				array(
+					'url' => 'https://allmycms.com/images/banners/agerix/agerix-loves-jcb-728-90.gif',
+					'hash' => 'b24c0726aa809cdcc04bcffe7e1e1529',
+					'html' => '<a href="https://vdm.bz/jcb-sponsor-agerix" target="_blank" title="Agerix a JCB sponsor | Because community matters..."><img class="jcb-sponsor-banner" alt="Agerix a JCB sponsor | Because community matters..." src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/agerix-loves-jcb-728-90.gif" width="728" height="90" border="0" /></a>')
 			),
 			'160-600' => array(
-				'<a href="https://vdm.bz/joomla-volunteers" target="_blank" title="Joomla! Volunteers Portal"><img src="https://cdn.joomla.org/volunteers/joomla-heart-tall.gif" alt="Joomla! Volunteers Portal" width="160" height="600" border="0"></a>',
-				'<a href="https://vdm.bz/joomla-magazine" target="_blank" title="Joomla! Community Magazine | Because community matters..."><img src="https://magazine.joomla.org/images/banners/JCM_2010_120x600.png" alt="Joomla! Community Magazine | Because community matters..." width="120" height="600" border="0"/></a>'
+				array(
+					'url' => 'https://cdn.joomla.org/volunteers/joomla-heart-tall.gif',
+					'hash' => '9a75e4929b86c318128b53cf78251678',
+					'html' => '<a href="https://vdm.bz/joomla-volunteers" target="_blank" title="Joomla! Volunteers Portal"><img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/joomla-heart-tall.gif" alt="Joomla! Volunteers Portal" width="160" height="600" border="0"></a>'),
+				array(
+					'url' => 'https://magazine.joomla.org/images/banners/JCM_2010_120x600.png',
+					'hash' => '5389cf3be8569cb3f6793e8bd4013d19',
+					'html' => '<a href="https://vdm.bz/joomla-magazine" target="_blank" title="Joomla! Community Magazine | Because community matters..."><img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/banner/JCM_2010_120x600.png" alt="Joomla! Community Magazine | Because community matters..." width="120" height="600" border="0"/></a>')
 			)
 		),
-		// The build-gif by size
+		// The build-gif by size (width - height)
 		'builder-gif' => array(
-			'707-400' => array(
-				'<img src="components/com_componentbuilder/assets/images/ajax-loader.gif" />'
+			// original gif ;)
+			'480-272' => array(
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/original.gif',
+					'hash' => '676e37a949add8f4573381195cd1061c',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/original.gif" />'
+				)
+			),
+			// new gif artwork since 2021
+			'480-540' => array(
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/1.gif',
+					'hash' => 'ce6e36456fa794ba95d981547b2f54f8',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/1.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/2.gif',
+					'hash' => '0a54dbc393359747e33db90cabb1e2d7',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/2.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/3.gif',
+					'hash' => '4e5498713ff69a64a0a79dbf620372a3',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/3.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/4.gif',
+					'hash' => '3554ffab2a6df95a116fd9f0db63925c',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/4.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/5.gif',
+					'hash' => '08f0cdf188593eca65c6dafd7af27ef9',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/5.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/6.gif',
+					'hash' => '103b46a7ac3fcb974e25d06f417a4e87',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/6.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/7.gif',
+					'hash' => 'ffa8547099b7286f89ab7ff5a140dd90',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/7.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/8.gif',
+					'hash' => '316df780f9e4ce81200a65d3c4303c41',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/8.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/9.gif',
+					'hash' => '9ab6ba78b6e63a285fdef2ff5e447c93',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/9.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/10.gif',
+					'hash' => 'cd9abaa1cb95f51a70916da6b70614f2',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/10.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/11.gif',
+					'hash' => 'cfe53095b5249618e2348223b89262b9',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/11.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/12.gif',
+					'hash' => '15a6690647d5160d67c80ce4dd1f5602',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/12.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/13.gif',
+					'hash' => '2f77562e92c8a3b7c47664c98f551fe8',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/13.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/14.gif',
+					'hash' => '46db15517ef5bd063be85134e1cc575d',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/14.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/15.gif',
+					'hash' => 'e6c96eff157ea648ceb1583f2cc22544',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/15.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/16.gif',
+					'hash' => '76010b7d1f99952eb9645df660467ae8',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/16.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/17.gif',
+					'hash' => '021219ddd72d8fcfc7f80bd4a874d651',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/17.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/18.gif',
+					'hash' => '383af3179d4ae27301c1292e630d7155',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/18.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/19.gif',
+					'hash' => '8537e6d7be93447241b521f851e8a61d',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/19.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/20.gif',
+					'hash' => '10d96f70e3d43086a925b00a7dc0022e',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/20.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/21.gif',
+					'hash' => '161de9865b171b44039353b8d50491d3',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/21.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/22.gif',
+					'hash' => '6a2354e43eb97d278d74bb2c12890988',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/22.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/23.gif',
+					'hash' => '2cb6e2f9562a8dc8eef6d5d8d1a84f5e',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/23.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>'),
+				array(
+					'url' => 'https://www.joomlacomponentbuilder.com/images/builder/24.gif',
+					'hash' => '745b3fb5e16515689132432bf02ab1b4',
+					'html' => '<img src="[[[ROOT-URL]]]administrator/components/com_componentbuilder/assets/images/builder-gif/24.gif" /><br /><div style="text-align: right; font-size: smaller;">Animation produced with 3D Particle Explorations by Jack Rugile.</div>')
 			)
 		)
 	);
 
 	/**
-	 * get the dynamic content
+	 * get the dynamic content array size
 	 * 
-	 * @param   string   $type     The type of content
-	 * @param   string    $size   The size of the content
+	 * @param   string   $type      The type of content
+	 * @param   string   $size      The size of the content
 	 *
-	 * @return  string   on success
+	 * @return  int   on success number of items in array type,size
 	 * 
 	 */
-	public static function getDynamicContent($type, $size, $default = '')
+	public static function getDynamicContentSize($type, $size)
 	{
-		if (isset(self::$dynamicContent[$type]) && isset(self::$dynamicContent[$type][$size]) && ($nr = self::checkArray(self::$dynamicContent[$type][$size])))
+		if (isset(self::$dynamicContent[$type]) && isset(self::$dynamicContent[$type][$size])
+			&& ($nr = self::checkArray(self::$dynamicContent[$type][$size])))
 		{
-			// get the random item number
-			$get = (int) rand(0, --$nr);
-			// return found content
-			return self::$dynamicContent[$type][$size][$get];
+			return $nr;
+		}
+		return 0;
+	}
+
+	/**
+	 * get the dynamic content
+	 * 
+	 * @param   string   $type      The type of content
+	 * @param   string   $size      The size of the content
+	 * @param   mix      $default   The default to return
+	 * @param   int      $try       Retry tracker (when bigger then array size it stops)
+	 * @param   mix      $getter    The specific getter number (not zero based)
+	 *
+	 * @return  string   on success html string
+	 * 
+	 */
+	public static function getDynamicContent($type, $size, $default = '', $try = 1, $getter = null)
+	{
+		if (($nr = self::getDynamicContentSize($type, $size)) !== 0)
+		{
+			// use specific getter
+			if ($getter)
+			{
+				$get = --$getter;
+			}
+			// get the random getter number
+			elseif ($nr > 1)
+			{
+				$get = (int) rand(0, --$nr);
+			}
+			else
+			{
+				$get = 0;
+			}
+			// get the current target if found
+			if (isset(self::$dynamicContent[$type][$size][$get]))
+			{
+				$target = self::$dynamicContent[$type][$size][$get];
+				// set file name
+				$file_name = basename($target['url']);
+				// set the local path (in admin area so when the component uninstall these images get removed as well)
+				$path = JPATH_ROOT . "/administrator/components/com_componentbuilder/assets/images/$type/$file_name";
+				// check if file exist or if it changed
+				if (($image_data = self::getFileContents($path, false)) === false ||
+					md5($image_data) !== $target['hash'])
+				{
+					// since the file does not exist or has changed (so we have a new hash)
+					// therefore we download it to validate
+					if (($image_data = self::getFileContents($target['url'], false)) !== false &&
+						md5($image_data) === $target['hash'])
+					{
+						// create the JCB type path if it does not exist
+						if (!JFolder::exists(JPATH_ROOT . "/administrator/components/com_componentbuilder/assets/images/$type"))
+						{
+							JFolder::create(JPATH_ROOT . "/administrator/components/com_componentbuilder/assets/images/$type");
+						}
+						// only set the image if the data match the hash
+						self::writeFile($path, $image_data);
+					}
+					// we retry array size times (unless specific getter is used)
+					elseif ($try <= $nr && !$getter)
+					{
+						// the first time around failed so we try again (the size of the array times)
+						return self::getDynamicContent($type, $size, $default, ++$try);
+					}
+				}
+				// return found content
+				return str_replace('[[[ROOT-URL]]]', JURI::root(), $target['html']);
+			}
 		}
 		return $default;
 	}
@@ -6353,6 +6093,571 @@ abstract class ComponentbuilderHelper
 			}
 		}
 		return $default;
+	}
+
+
+	/**
+	* get extensions grouped list xml
+	**/
+	public static function getExtensionGroupedListXml()
+	{
+		// the extension types
+		$extensions = array(
+			'joomla_component' => 'COM_COMPONENTBUILDER_COMPONENT',
+			'joomla_module' => 'COM_COMPONENTBUILDER_MODULE',
+			'joomla_plugin' => 'COM_COMPONENTBUILDER_PLUGIN'
+		);
+		// get the extension values
+		foreach ($extensions as $extension => $label)
+		{
+			${$extension} = self::getByTypeTheIdsSystemNames($extension);
+		}
+
+		$xml = new DOMDocument();
+		$xml->formatOutput = true;
+
+		$root = $xml->createElement('field');
+		$root->setAttributeNode(new DOMAttr('name', 'extension'));
+		$root->setAttributeNode(new DOMAttr('type', 'groupedlist'));
+		$root->setAttributeNode(new DOMAttr('onchange', 'this.form.submit();'));
+
+		$root
+			->appendChild($xml->createElement('option', '- ' . JText::_('COM_COMPONENTBUILDER_SELECT_EXTENSION') . ' -'))
+			->setAttributeNode(new DOMAttr('value', ''));
+
+		foreach ($extensions as $extension => $label)
+		{
+			$extension_node = $xml->createElement('group');
+			$extension_node->setAttributeNode(new DOMAttr('label', $label));
+			if (!self::checkArray(${$extension}))
+			{
+				$extension_node
+					->appendChild($xml->createElement('option', '- ' . JText::_('COM_COMPONENTBUILDER_NONE') . ' -'))
+					->setAttributeNode(new DOMAttr('disabled', 'true'));
+			}
+			else
+			{
+				foreach (${$extension} as $id => $element)
+				{
+					$extension_node
+						->appendChild($xml->createElement('option', $element))
+						->setAttributeNode(new DOMAttr('value', $extension . '__' . $id));
+				}
+			}
+			$root->appendChild($extension_node);
+		}
+		$xml->appendChild($root);
+		return $xml->saveXML();
+	}
+
+	/**
+	* get by type the ids and system names
+	**/
+	public static function getByTypeTheIdsSystemNames($type, $limiter = null)
+	{
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		$query
+			->select($db->quoteName(array('id', 'system_name')))
+			->from($db->quoteName('#__componentbuilder_' . $type))
+			->where($db->quoteName('published') . ' >= 1')
+			->order($db->quoteName('modified') . ' desc')
+			->order($db->quoteName('created') . ' desc');
+		// check if we have a limter for admin views
+		if ($type === 'admin_view' && $limiter)
+		{
+			// first get all views
+			$adminviewIds = array();
+			// if this is a plugin or a module, then no views
+			if (strpos($limiter, 'joomla_component') !== false)
+			{
+				$component = (int) str_replace('joomla_component__', '', $limiter);
+				// get the views of this component
+				if ($addViews = self::getVar('component_admin_views', (int) $component, 'joomla_component', 'addadmin_views'))
+				{
+					if (self::checkJson($addViews))
+					{
+						$addViews = json_decode($addViews, true);
+						if (self::checkArray($addViews))
+						{
+							foreach($addViews as $addView)
+							{
+								if (isset($addView['adminview']))
+								{
+									$adminviewIds[(int) $addView['adminview']] = (int) $addView['adminview'];
+								}
+							}
+						}
+					}
+				}
+			}
+			// now check if we still have admin views
+			if (self::checkArray($adminviewIds))
+			{
+				$query->where($db->quoteName('id') . ' IN (' . implode(',', $adminviewIds) . ')');
+			}
+			else
+			{
+				return false;
+			}
+		}
+		$db->setQuery($query);
+		$db->execute();
+		if ($db->getNumRows())
+		{
+			return $db->loadAssocList('id', 'system_name');
+		}
+		return false;
+	}
+
+
+	/**
+	 * get any area linked IDs
+	 */
+	public static function getAreaLinkedIDs($extension, $type)
+	{
+		// What ever...
+		if ($type === 'joomla_component_admin_views')
+		{
+			return self::getComponentAdminViewsIDs($extension);
+		}
+		elseif ($type === 'joomla_component_custom_admin_views')
+		{
+			return self::getComponentCustomAdminViewsIDs($extension);
+		}
+		elseif ($type === 'joomla_component_site_views')
+		{
+			return self::getComponentSiteViewsIDs($extension);
+		}
+		elseif ($type === 'joomla_component')
+		{
+			return self::getComponentFieldsIDs($extension);
+		}
+		elseif ($type === 'joomla_module')
+		{
+			return self::getModuleFieldsIDs($extension);
+		}
+		elseif ($type === 'joomla_plugin')
+		{
+			return self::getPluginFieldsIDs($extension);
+		}
+		elseif ($type === 'admin_view')
+		{
+			return self::getAdminViewFieldsIDs($extension);
+		}
+		return false;
+	}
+
+	/**
+	 * get a component admin views IDs
+	 */
+	public static function getComponentAdminViewsIDs($id)
+	{
+		// get all this components views
+		$adminviewIds = array();
+		// get the views of this component
+		if ($addViews = self::getVar('component_admin_views', (int) $id, 'joomla_component', 'addadmin_views'))
+		{
+			if (self::checkJson($addViews))
+			{
+				$addViews = json_decode($addViews, true);
+				if (self::checkArray($addViews))
+				{
+					foreach($addViews as $addView)
+					{
+						if (isset($addView['adminview']))
+						{
+							$adminviewIds[(int) $addView['adminview']] = (int) $addView['adminview'];
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($adminviewIds))
+		{
+			return array_values($adminviewIds);
+		}
+		return false;
+	}
+
+	/**
+	 * get a component custom admin views IDs
+	 */
+	public static function getComponentCustomAdminViewsIDs($id)
+	{
+		// get all this components views
+		$adminviewIds = array();
+		// get the views of this component
+		if ($addViews = self::getVar('component_custom_admin_views', (int) $id, 'joomla_component', 'addcustom_admin_views'))
+		{
+			if (self::checkJson($addViews))
+			{
+				$addViews = json_decode($addViews, true);
+				if (self::checkArray($addViews))
+				{
+					foreach($addViews as $addView)
+					{
+						if (isset($addView['customadminview']))
+						{
+							$adminviewIds[(int) $addView['customadminview']] = (int) $addView['customadminview'];
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($adminviewIds))
+		{
+			return array_values($adminviewIds);
+		}
+		return false;
+	}
+
+	/**
+	 * get a component site views IDs
+	 */
+	public static function getComponentSiteViewsIDs($id)
+	{
+		// get all this components views
+		$adminviewIds = array();
+		// get the views of this component
+		if ($addViews = self::getVar('component_site_views', (int) $id, 'joomla_component', 'addsite_views'))
+		{
+			if (self::checkJson($addViews))
+			{
+				$addViews = json_decode($addViews, true);
+				if (self::checkArray($addViews))
+				{
+					foreach($addViews as $addView)
+					{
+						if (isset($addView['siteview']))
+						{
+							$adminviewIds[(int) $addView['siteview']] = (int) $addView['siteview'];
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($adminviewIds))
+		{
+			return array_values($adminviewIds);
+		}
+		return false;
+	}
+
+	/**
+	 * get a component fields IDs
+	 */
+	public static function getComponentFieldsIDs($id)
+	{
+		// we start the field array
+		$fieldIds = array();
+		// first get all views
+		$adminviewIds = array();
+		// get the views of this component
+		if ($addViews = self::getVar('component_admin_views', (int) $id, 'joomla_component', 'addadmin_views'))
+		{
+			if (self::checkJson($addViews))
+			{
+				$addViews = json_decode($addViews, true);
+				if (self::checkArray($addViews))
+				{
+					foreach($addViews as $addView)
+					{
+						if (isset($addView['adminview']))
+						{
+							$adminviewIds[(int) $addView['adminview']] = (int) $addView['adminview'];
+						}
+					}
+				}
+			}
+		}
+		// check that we have views
+		if (self::checkArray($adminviewIds))
+		{
+			foreach ($adminviewIds as $adminView)
+			{
+				// get all the fields linked to the admin view
+				if ($addFields = self::getVar('admin_fields', (int) $adminView, 'admin_view', 'addfields'))
+				{
+					if (self::checkJson($addFields))
+					{
+						$addFields = json_decode($addFields, true);
+						if (self::checkArray($addFields))
+						{
+							foreach($addFields as $addField)
+							{
+								if (isset($addField['field']))
+								{
+									$fieldIds[(int) $addField['field']] = (int) $addField['field'];
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// get config values
+		if ($addconfig = self::getVar('component_config', (int) $id, 'joomla_component', 'addconfig'))
+		{
+			if (self::checkJson($addconfig))
+			{
+				$addconfig = json_decode($addconfig, true);
+				if (self::checkArray($addconfig))
+				{
+					foreach($addconfig as $addconf)
+					{
+						if (isset($addconf['field']))
+						{
+							$fieldIds[(int) $addconf['field']] = (int) $addconf['field'];
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($fieldIds))
+		{
+			return array_values($fieldIds);
+		}
+		return false;
+	}
+
+	/**
+	 * get a module fields IDs
+	 */
+	public static function getModuleFieldsIDs($id)
+	{
+		// we start the field array
+		$fieldIds = array();
+		if ($fields = self::getVar('joomla_module', (int) $id, 'id', 'fields'))
+		{
+			if (self::checkJson($fields))
+			{
+				$fields = json_decode($fields, true);
+				if (self::checkArray($fields))
+				{
+					foreach($fields as $form)
+					{
+						if (isset($form['fields']) && self::checkArray($form['fields']))
+						{
+							foreach ($form['fields'] as $field)
+							{
+								if (isset($field['field']))
+								{
+									$fieldIds[(int) $field['field']] = (int) $field['field'];
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($fieldIds))
+		{
+			return array_values($fieldIds);
+		}
+		return false;
+	}
+
+	/**
+	 * get a plugin fields IDs
+	 */
+	public static function getPluginFieldsIDs($id)
+	{
+		// we start the field array
+		$fieldIds = array();
+		if ($fields = self::getVar('joomla_plugin', (int) $id, 'id', 'fields'))
+		{
+			if (self::checkJson($fields))
+			{
+				$fields = json_decode($fields, true);
+				if (self::checkArray($fields))
+				{
+					foreach($fields as $form)
+					{
+						if (isset($form['fields']) && self::checkArray($form['fields']))
+						{
+							foreach ($form['fields'] as $field)
+							{
+								if (isset($field['field']))
+								{
+									$fieldIds[(int) $field['field']] = (int) $field['field'];
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($fieldIds))
+		{
+			return array_values($fieldIds);
+		}
+		return false;
+	}
+
+	/**
+	 * get an admin view fields IDs
+	 */
+	public static function getAdminViewFieldsIDs($id)
+	{
+		// we start the field array
+		$fieldIds = array();
+		// get all the fields linked to the admin view
+		if ($addFields = self::getVar('admin_fields', (int) $id, 'admin_view', 'addfields'))
+		{
+			if (self::checkJson($addFields))
+			{
+				$addFields = json_decode($addFields, true);
+				if (self::checkArray($addFields))
+				{
+					foreach($addFields as $addField)
+					{
+						if (isset($addField['field']))
+						{
+							$fieldIds[(int) $addField['field']] = (int) $addField['field'];
+						}
+					}
+				}
+			}
+		}
+		// check that we have fields
+		if (self::checkArray($fieldIds))
+		{
+			return array_values($fieldIds);
+		}
+		return false;
+	}
+
+	/**
+	* get translation extension ids
+	**/
+	public static function getTranslationExtensionsIds($extension, $type)
+	{
+		// only allow these columns (extension types)
+		$columns = array(
+			'joomla_component' => 'components',
+			'joomla_module' => 'modules',
+			'joomla_plugin' => 'plugins'
+		);
+		// check if the column name is correct
+		if (isset($columns[$type]))
+		{
+			$column = $columns[$type];
+			$db = JFactory::getDbo();
+			$query = $db->getQuery(true);
+			$query
+				->select($db->quoteName(array('id', $column)))
+				->from($db->quoteName('#__componentbuilder_language_translation'))
+				->where($db->quoteName($column) . ' != ' . $db->quote(''));
+			$db->setQuery($query);
+			$db->execute();
+			if ($db->getNumRows())
+			{
+				$results = $db->loadAssocList();
+				$matches = array();
+				foreach ($results as $k => $v)
+				{
+					$value = json_decode($v[$column], true);
+					if (in_array($extension, $value))
+					{
+						$matches[$v['id']] = $v['id'];
+					}
+				}
+				// Checks that we found matches
+				if (self::checkArray($matches))
+				{
+					return array_values($matches);
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	* get translation ids
+	**/
+	public static function getTranslationIds($language, $translated = true)
+	{
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		$query
+			->select($db->quoteName('id'))
+			->from($db->quoteName('#__componentbuilder_language_translation'));
+
+		// Build the where condition
+		if ($translated === true) // Translated
+		{
+			if ($language === 'all')
+			{
+				if (($languages = self::getAvailableLanguages()) !== false)
+				{
+					$wheres = array();
+					foreach ($languages as $k => $v)
+					{
+						$wheres[] = $db->quoteName('translation') . ' LIKE ' . $db->quote('%' . $k . '%');
+					}
+					$query->where($wheres);
+				}
+			}
+			else
+			{
+				$query->where($db->quoteName('translation') . ' LIKE ' . $db->quote('%' . $language . '%'));
+			}
+		}
+		else // Not translated
+		{
+			if ($language === 'none')
+			{
+				$query->where(
+					array(
+						$db->quoteName('translation') . ' = ' . $db->quote(''),
+						$db->quoteName('translation') . ' = ' . $db->quote('[]'),
+						$db->quoteName('translation') . ' = ' . $db->quote('{}')
+					), 'OR'
+				);
+			}
+			else
+			{
+				$query->where($db->quoteName('translation') . ' NOT LIKE ' . $db->quote('%' . $language . '%'));
+			}
+		}
+
+		$db->setQuery($query);
+		$db->execute();
+		if ($db->getNumRows())
+		{
+			return array_unique($db->loadColumn());
+		}
+		return false;
+	}
+
+	/**
+	* get available languages
+	**/
+	public static function getAvailableLanguages()
+	{
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+		$query
+			->select($db->quoteName(array('langtag', 'name')))
+			->from($db->quoteName('#__componentbuilder_language'))
+			->where($db->quoteName('published') . ' = 1')
+			->order($db->quoteName('name') . ' desc');
+		$db->setQuery($query);
+		$db->execute();
+		if ($db->getNumRows())
+		{
+			return $db->loadAssocList('langtag', 'name');
+		}
+		return false;
 	}
 
 
