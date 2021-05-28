@@ -4578,17 +4578,18 @@ class Fields extends Structure
 		$nameListCode, $name, $view, $field, $typeName, $multiple,
 		$custom = false, $options = false
 	) {
+		// check if this is a tag field
+		if ($typeName === 'tag')
+		{
+			// set tags for this view but don't load to DB
+			$this->tagsBuilder[$nameSingleCode] = $nameSingleCode;
+		}
 		// dbSwitch
 		$dbSwitch = true;
 		if (isset($field['list']) && $field['list'] == 2)
 		{
 			// do not add this field to the database
 			$dbSwitch = false;
-		}
-		elseif ($typeName === 'tag')
-		{
-			// set tags for this view but don't load to DB
-			$this->tagsBuilder[$nameSingleCode] = $nameSingleCode;
 		}
 		elseif (isset($field['settings']->datatype))
 		{
@@ -6135,7 +6136,7 @@ class Fields extends Structure
 			{
 				$fieldData['component'] = $local_component;
 			}
-			// check that the componet has the com_ value in it
+			// check that the component has the com_ value in it
 			if (strpos($fieldData['component'], 'com_') === false
 				|| strpos(
 					$fieldData['component'], '='
