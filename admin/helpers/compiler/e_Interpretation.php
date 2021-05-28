@@ -12,6 +12,9 @@
 // No direct access to this file
 defined('_JEXEC') or die('Restricted access');
 
+use Joomla\CMS\Filesystem\File;
+use Joomla\CMS\Filesystem\Folder;
+
 /**
  * Compiler class
  */
@@ -1010,11 +1013,9 @@ class Interpretation extends Fields
 					. " Prep the path a little";
 				$function[] = $this->_t(2)
 					. "\$path = '/'. trim(str_replace('//', '/', \$path), '/');";
-				$function[] = $this->_t(2)
-					. "jimport('joomla.filesystem.folder');";
-				$function[] = $this->_t(2) . "///" . $this->setLine(__LINE__)
+				$function[] = $this->_t(2) . "//" . $this->setLine(__LINE__)
 					. " Check if folder exist";
-				$function[] = $this->_t(2) . "if (!JFolder::exists(\$path))";
+				$function[] = $this->_t(2) . "if (!Folder::exists(\$path))";
 				$function[] = $this->_t(2) . "{";
 				$function[] = $this->_t(3) . "//" . $this->setLine(__LINE__)
 					. " Lock key.";
@@ -1565,12 +1566,15 @@ class Interpretation extends Fields
 	{
 		if ($this->addEximport)
 		{
+			// we use the company name set in the GUI
+			$company_name = $this->fileContentStatic[$this->hhh . 'COMPANYNAME' . $this->hhh];
+			// start building the xml function
 			$exel   = array();
 			$exel[] = PHP_EOL . PHP_EOL . $this->_t(1) . "/**";
 			$exel[] = $this->_t(1) . "* Prepares the xml document";
 			$exel[] = $this->_t(1) . "*/";
 			$exel[] = $this->_t(1)
-				. "public static function xls(\$rows, \$fileName = null, \$title = null, \$subjectTab = null, \$creator = 'Joomla Component Builder', \$description = null, \$category = null,\$keywords = null, \$modified = null)";
+				. "public static function xls(\$rows, \$fileName = null, \$title = null, \$subjectTab = null, \$creator = '$company_name', \$description = null, \$category = null,\$keywords = null, \$modified = null)";
 			$exel[] = $this->_t(1) . "{";
 			$exel[] = $this->_t(2) . "//" . $this->setLine(__LINE__)
 				. " set the user";
@@ -1611,7 +1615,7 @@ class Interpretation extends Fields
 				. " Set document properties";
 			$exel[] = $this->_t(2) . "\$spreadsheet->getProperties()";
 			$exel[] = $this->_t(3) . "->setCreator(\$creator)";
-			$exel[] = $this->_t(3) . "->setCompany('Joomla Component Builder')";
+			$exel[] = $this->_t(3) . "->setCompany('$company_name')";
 			$exel[] = $this->_t(3) . "->setLastModifiedBy(\$modified)";
 			$exel[] = $this->_t(3) . "->setTitle(\$title)";
 			$exel[] = $this->_t(3) . "->setSubject(\$subjectTab);";
@@ -6660,7 +6664,7 @@ class Interpretation extends Fields
 					__LINE__
 				) . " check if the CSS file exists.";
 			$setter .= PHP_EOL . $tabV . $this->_t(5)
-				. "if (JFile::exists(JPATH_ROOT.'/media/com_"
+				. "if (File::exists(JPATH_ROOT.'/media/com_"
 				. $this->componentCodeName
 				. "/uikit-v2/css/components/'.\$name.\$style.\$size.'.css'))";
 			$setter .= PHP_EOL . $tabV . $this->_t(5) . "{";
@@ -6679,7 +6683,7 @@ class Interpretation extends Fields
 					__LINE__
 				) . " check if the JavaScript file exists.";
 			$setter .= PHP_EOL . $tabV . $this->_t(5)
-				. "if (JFile::exists(JPATH_ROOT.'/media/com_"
+				. "if (File::exists(JPATH_ROOT.'/media/com_"
 				. $this->componentCodeName
 				. "/uikit-v2/js/components/'.\$name.\$size.'.js'))";
 			$setter .= PHP_EOL . $tabV . $this->_t(5) . "{";
@@ -6719,11 +6723,6 @@ class Interpretation extends Fields
 			$setter .= PHP_EOL . $tabV . $this->_t(2) . "{";
 			$setter .= PHP_EOL . $tabV . $this->_t(3) . "//" . $this->setLine(
 					__LINE__
-				) . " load just in case.";
-			$setter .= PHP_EOL . $tabV . $this->_t(3)
-				. "jimport('joomla.filesystem.file');";
-			$setter .= PHP_EOL . $tabV . $this->_t(3) . "//" . $this->setLine(
-					__LINE__
 				) . " loading...";
 			$setter .= PHP_EOL . $tabV . $this->_t(3)
 				. "foreach (\$uikitComp as \$class)";
@@ -6736,7 +6735,7 @@ class Interpretation extends Fields
 					__LINE__
 				) . " check if the CSS file exists.";
 			$setter .= PHP_EOL . $tabV . $this->_t(5)
-				. "if (JFile::exists(JPATH_ROOT.'/media/com_"
+				. "if (File::exists(JPATH_ROOT.'/media/com_"
 				. $this->componentCodeName
 				. "/uikit-v2/css/components/'.\$name.\$style.\$size.'.css'))";
 			$setter .= PHP_EOL . $tabV . $this->_t(5) . "{";
@@ -6755,7 +6754,7 @@ class Interpretation extends Fields
 					__LINE__
 				) . " check if the JavaScript file exists.";
 			$setter .= PHP_EOL . $tabV . $this->_t(5)
-				. "if (JFile::exists(JPATH_ROOT.'/media/com_"
+				. "if (File::exists(JPATH_ROOT.'/media/com_"
 				. $this->componentCodeName
 				. "/uikit-v2/js/components/'.\$name.\$size.'.js'))";
 			$setter .= PHP_EOL . $tabV . $this->_t(5) . "{";
@@ -7225,7 +7224,7 @@ class Interpretation extends Fields
 						$file
 					))
 				{
-					if (JFile::exists($file['path']))
+					if (File::exists($file['path']))
 					{
 						$string            = ComponentbuilderHelper::getFileContents(
 							$file['path']
@@ -7241,7 +7240,7 @@ class Interpretation extends Fields
 					{
 						if (ComponentbuilderHelper::checkArray($doc))
 						{
-							if (JFile::exists($doc['path']))
+							if (File::exists($doc['path']))
 							{
 								$string
 									            = ComponentbuilderHelper::getFileContents(
@@ -8675,7 +8674,7 @@ class Interpretation extends Fields
 			$script[] = $this->_t(2) . "//" . $this->setLine(__LINE__)
 				. " get all the folders";
 			$script[] = $this->_t(2)
-				. "\$folders = JFolder::folders(\$installPath);";
+				. "\$folders = Folder::folders(\$installPath);";
 			$script[] = $this->_t(2) . "//" . $this->setLine(__LINE__)
 				. " check if we have folders we may want to copy";
 			$script[] = $this->_t(2)
@@ -8697,7 +8696,7 @@ class Interpretation extends Fields
 			$script[] = $this->_t(5) . "//" . $this->setLine(__LINE__)
 				. " now try to copy the folder";
 			$script[] = $this->_t(5)
-				. "if (!JFolder::copy(\$src, \$dest, '', true))";
+				. "if (!Folder::copy(\$src, \$dest, '', true))";
 			$script[] = $this->_t(5) . "{";
 			$script[] = $this->_t(6)
 				. "\$app->enqueueMessage('Could not copy '.\$folder.' folder into place, please make sure destination is writable!', 'error');";
@@ -15723,10 +15722,13 @@ class Interpretation extends Fields
 		{
 			$categoryCodeName = $this->categoryBuilder[$nameListCode]['code'];
 			$addCategory      = true;
+			$addCategoryFilter
+			                  = $this->categoryBuilder[$nameListCode]['filter'];
 		}
 		else
 		{
-			$addCategory = false;
+			$addCategory       = false;
+			$addCategoryFilter = 0;
 		}
 		// setup the query
 		$query = "//" . $this->setLine(__LINE__) . " Get the user object.";
@@ -15842,7 +15844,7 @@ class Interpretation extends Fields
 		// set other filters
 		$query .= $this->setFilterQuery($nameListCode);
 		// add the category
-		if ($addCategory)
+		if ($addCategory && $addCategoryFilter >= 1)
 		{
 			$query .= PHP_EOL . PHP_EOL . $this->_t(2) . "//" . $this->setLine(
 					__LINE__
@@ -18653,7 +18655,9 @@ class Interpretation extends Fields
 			&& ComponentbuilderHelper::checkArray(
 				$this->categoryBuilder[$nameListCode]
 			)
-			&& isset($this->categoryBuilder[$nameListCode]['extension']))
+			&& isset($this->categoryBuilder[$nameListCode]['extension'])
+			&& isset($this->categoryBuilder[$nameListCode]['filter'])
+			&& $this->categoryBuilder[$nameListCode]['filter'] >= 1)
 		{
 			// set filter
 			$filter[] = PHP_EOL . $this->_t(2) . "//"
@@ -22341,6 +22345,7 @@ class Interpretation extends Fields
 				break;
 			case 'admin.helper':
 			case 'site.helper':
+				$headers[] = 'use Joomla\CMS\Filesystem\File;';
 				$headers[] = 'use Joomla\CMS\Language\Language;';
 				$headers[] = 'use Joomla\Registry\Registry;';
 				$headers[] = 'use Joomla\String\StringHelper;';
@@ -22381,6 +22386,26 @@ class Interpretation extends Fields
 			case 'site.view':
 			case 'site.views':
 				$headers = array();
+				break;
+			case 'admin.view.html':
+			case 'admin.views.html':
+			case 'site.admin.view.html':
+			case 'site.view.html':
+			case 'site.views.html':
+			case 'custom.admin.view.html':
+			case 'custom.admin.views.html':
+				// add a space
+				$headers = array('');
+				// load the file class if uikit is being loaded
+				if ((2 == $this->uikit || 1 == $this->uikit)
+					&& isset($this->uikitComp[$viewsCodeName])
+					&& ComponentbuilderHelper::checkArray(
+						$this->uikitComp[$viewsCodeName]
+					))
+				{
+					$headers[] = 'use Joomla\CMS\Filesystem\File;';
+					$headers[] = '';
+				}
 				break;
 			default:
 				$headers[] = 'use Joomla\Utilities\ArrayHelper;';
@@ -22442,7 +22467,9 @@ class Interpretation extends Fields
 				&& ComponentbuilderHelper::checkArray(
 					$this->categoryBuilder[$nameListCode]
 				)
-				&& isset($this->categoryBuilder[$nameListCode]['extension']))
+				&& isset($this->categoryBuilder[$nameListCode]['extension'])
+				&& isset($this->categoryBuilder[$nameListCode]['filter'])
+				&& $this->categoryBuilder[$nameListCode]['filter'] >= 1)
 			{
 				// is found so add it
 				$add_category = true;
@@ -22466,18 +22493,28 @@ class Interpretation extends Fields
 					if (isset($filter['multi'])
 						&& $filter['multi'] == 2)
 					{
+						// if this is a category we should make sure it must be added
+						if (!$add_category && $filter['type'] === 'category')
+						{
+							continue;
+						}
+						elseif ($add_category && $filter['type'] === 'category')
+						{
+							// already added here so no need to add again
+							$add_category = false;
+						}
+						// check if this was an access field
+						elseif ($filter['type'] === 'accesslevel')
+						{
+							// already added here so no need to add again
+							$add_access_levels = false;
+						}
 						// add the header
 						$headers[]
 							= 'JHtml::_(\'formbehavior.chosen\', \'.multiple'
 							. $filter['class']
 							. '\', null, array(\'placeholder_text_multiple\' => \'- \' . JText::_(\''
 							. $filter['lang_select'] . '\') . \' -\'));';
-						// check if this was an access field
-						if ($filter['type'] === 'accesslevel')
-						{
-							// already added here so no need to add again
-							$add_access_levels = false;
-						}
 					}
 					elseif ($add_category && $filter['type'] === 'category')
 					{
@@ -22717,7 +22754,7 @@ class Interpretation extends Fields
 		{
 			$imagePath = $this->componentPath . '/admin/assets/images';
 			// move the image to its place
-			JFile::copy(
+			File::copy(
 				JPATH_SITE . '/' . $path,
 				$imagePath . '/vdm-component.' . $type
 			);
@@ -22966,7 +23003,7 @@ class Interpretation extends Fields
 						$imageName = $name . '.' . $type;
 					}
 					// move the image to its place
-					JFile::copy(
+					File::copy(
 						JPATH_SITE . '/' . $path, $imagePath . '/' . $imageName
 					);
 				}
@@ -23390,27 +23427,27 @@ class Interpretation extends Fields
 				);
 			}
 			$catArray = array();
+			// loop over all the admin views
 			foreach ($this->componentData->admin_views as $view)
 			{
 				// set custom menu
-				$menus      .= $this->addCustomSubMenu($view, $codeName, $lang);
-				$nameSingle = ComponentbuilderHelper::safeString(
-					$view['settings']->name_single
+				$menus          .= $this->addCustomSubMenu(
+					$view, $codeName, $lang
 				);
-				$nameList   = ComponentbuilderHelper::safeString(
-					$view['settings']->name_list
-				);
-				$nameUpper  = ComponentbuilderHelper::safeString(
+				$nameSingleCode = $view['settings']->name_single_code;
+				$nameListCode   = $view['settings']->name_list_code;
+				$nameUpper      = ComponentbuilderHelper::safeString(
 					$view['settings']->name_list, 'U'
 				);
+				// check if view is set to be in the sub-menu
 				if (isset($view['submenu']) && $view['submenu'] == 1)
 				{
 					// setup access defaults
 					$tab      = "";
 					$coreLoad = false;
-					if (isset($this->permissionCore[$nameSingle]))
+					if (isset($this->permissionCore[$nameSingleCode]))
 					{
-						$core     = $this->permissionCore[$nameSingle];
+						$core     = $this->permissionCore[$nameSingleCode];
 						$coreLoad = true;
 					}
 					// check if the item has permissions.
@@ -23420,14 +23457,14 @@ class Interpretation extends Fields
 							$this->permissionBuilder['global'][$core['core.access']]
 						)
 						&& in_array(
-							$nameSingle,
+							$nameSingleCode,
 							$this->permissionBuilder['global'][$core['core.access']]
 						))
 					{
 						$menus .= PHP_EOL . $this->_t(2)
 							. "if (\$user->authorise('" . $core['core.access']
 							. "', 'com_" . $codeName
-							. "') && \$user->authorise('" . $nameSingle
+							. "') && \$user->authorise('" . $nameSingleCode
 							. ".submenu', 'com_" . $codeName . "'))";
 						$menus .= PHP_EOL . $this->_t(2) . "{";
 						// add tab to lines to follow
@@ -23436,33 +23473,38 @@ class Interpretation extends Fields
 					$menus .= PHP_EOL . $this->_t(2) . $tab
 						. "JHtmlSidebar::addEntry(JText:" . ":_('" . $lang . "_"
 						. $nameUpper . "'), 'index.php?option=com_" . $codeName
-						. "&view=" . $nameList . "', \$submenu === '"
-						. $nameList . "');";
+						. "&view=" . $nameListCode . "', \$submenu === '"
+						. $nameListCode . "');";
 					$this->setLangContent(
 						$this->lang, $lang . "_" . $nameUpper,
 						$view['settings']->name_list
 					);
 					// check if category has another name
-					if (isset($this->catOtherName[$nameList])
+					if (isset($this->catOtherName[$nameListCode])
 						&& ComponentbuilderHelper::checkArray(
-							$this->catOtherName[$nameList]
+							$this->catOtherName[$nameListCode]
 						))
 					{
-						$otherViews = $this->catOtherName[$nameList]['views'];
+						$otherViews
+							= $this->catOtherName[$nameListCode]['views'];
 					}
 					else
 					{
-						$otherViews = $nameList;
+						$otherViews = $nameListCode;
 					}
-					if (isset($this->categoryBuilder[$nameList])
+					// first check if category sub-menu should be added
+					// then check if view has category, if true add sub-menu for it
+					if ($view['settings']->add_category_submenu == 1
+						&& isset($this->categoryBuilder[$nameListCode])
 						&& ComponentbuilderHelper::checkArray(
-							$this->categoryBuilder[$nameList]
+							$this->categoryBuilder[$nameListCode]
 						)
 						&& !in_array($otherViews, $catArray))
 					{
 						// get the extension array
 						$_extension_array = (array) explode(
-							'.', $this->categoryBuilder[$nameList]['extension']
+							'.',
+							$this->categoryBuilder[$nameListCode]['extension']
 						);
 						// set the menu selection
 						if (isset($_extension_array[1]))
@@ -23476,9 +23518,9 @@ class Interpretation extends Fields
 						// now load the menus
 						$menus .= PHP_EOL . $this->_t(2) . $tab
 							. "JHtmlSidebar::addEntry(JText:" . ":_('"
-							. $this->categoryBuilder[$nameList]['name']
+							. $this->categoryBuilder[$nameListCode]['name']
 							. "'), 'index.php?option=com_categories&view=categories&extension="
-							. $this->categoryBuilder[$nameList]['extension']
+							. $this->categoryBuilder[$nameListCode]['extension']
 							. "', \$submenu === '" . $_menu . "');";
 						// make sure we add a category only once
 						$catArray[] = $otherViews;
@@ -23490,7 +23532,7 @@ class Interpretation extends Fields
 							$this->permissionBuilder['global'][$core['core.access']]
 						)
 						&& in_array(
-							$nameSingle,
+							$nameSingleCode,
 							$this->permissionBuilder['global'][$core['core.access']]
 						))
 					{
@@ -23508,13 +23550,13 @@ class Interpretation extends Fields
 						. "JHtmlSidebar::addEntry(JText:" . ":_('" . $lang . "_"
 						. $nameUpper
 						. "_FIELDS'), 'index.php?option=com_fields&context=com_"
-						. $codeName . "." . $nameSingle
+						. $codeName . "." . $nameSingleCode
 						. "', \$submenu === 'fields.fields');";
 					$menus .= PHP_EOL . $this->_t(3)
 						. "JHtmlSidebar::addEntry(JText:" . ":_('" . $lang . "_"
 						. $nameUpper
 						. "_FIELDS_GROUPS'), 'index.php?option=com_fields&view=groups&context=com_"
-						. $codeName . "." . $nameSingle
+						. $codeName . "." . $nameSingleCode
 						. "', \$submenu === 'fields.groups');";
 					$menus .= PHP_EOL . $this->_t(2) . "}";
 					$this->setLangContent(
@@ -23527,9 +23569,10 @@ class Interpretation extends Fields
 						$view['settings']->name_list . ' Field Groups'
 					);
 					// build uninstall script for fields
-					$this->uninstallScriptBuilder[$nameSingle] = 'com_'
-						. $codeName . '.' . $nameSingle;
-					$this->uninstallScriptFields[$nameSingle]  = $nameSingle;
+					$this->uninstallScriptBuilder[$nameSingleCode] = 'com_'
+						. $codeName . '.' . $nameSingleCode;
+					$this->uninstallScriptFields[$nameSingleCode]
+					                                               = $nameSingleCode;
 				}
 			}
 			if (isset($this->lastCustomSubMenu)
@@ -28163,9 +28206,9 @@ function vdm_dkim() {
 							$path = $module->folder_path . '/language/' . $tag
 								. '/';
 							// create path if not exist
-							if (!JFolder::exists($path))
+							if (!Folder::exists($path))
 							{
-								JFolder::create($path);
+								Folder::create($path);
 								// count the folder created
 								$this->folderCount++;
 							}
@@ -28192,8 +28235,8 @@ function vdm_dkim() {
 			}
 		}
 		// get all files and folders in module folder
-		$files   = JFolder::files($module->folder_path);
-		$folders = JFolder::folders($module->folder_path);
+		$files   = Folder::files($module->folder_path);
+		$folders = Folder::folders($module->folder_path);
 		// the files/folders to ignore
 		$ignore = array('sql', 'language', 'script.php',
 		                $module->file_name . '.xml',
@@ -28521,9 +28564,9 @@ function vdm_dkim() {
 							$path = $plugin->folder_path . '/language/' . $tag
 								. '/';
 							// create path if not exist
-							if (!JFolder::exists($path))
+							if (!Folder::exists($path))
 							{
-								JFolder::create($path);
+								Folder::create($path);
 								// count the folder created
 								$this->folderCount++;
 							}
@@ -28553,8 +28596,8 @@ function vdm_dkim() {
 			}
 		}
 		// get all files and folders in plugin folder
-		$files   = JFolder::files($plugin->folder_path);
-		$folders = JFolder::folders($plugin->folder_path);
+		$files   = Folder::files($plugin->folder_path);
+		$folders = Folder::folders($plugin->folder_path);
 		// the files/folders to ignore
 		$ignore = array('sql', 'language', 'script.php',
 		                $plugin->file_name . '.xml',

@@ -1315,21 +1315,24 @@ class Fields extends Structure
 			$tab_name   = "publishing";
 
 			$attributes = array(
-				'name'        => $field_name,
-				'type'        => 'hidden',
-				'default'      => $component . ' ' . $nameSingleCode
+				'name'    => $field_name,
+				'type'    => 'hidden',
+				'default' => $component . ' ' . $nameSingleCode
 			);
 			ComponentbuilderHelper::xmlComment(
 				$fieldSetXML,
-				$this->setLine(__LINE__) . " Was added due to Permissions JS needing a Title field"
+				$this->setLine(__LINE__)
+				. " Was added due to Permissions JS needing a Title field"
 			);
 			ComponentbuilderHelper::xmlComment(
 				$fieldSetXML,
-				$this->setLine(__LINE__) . " Let us know at gh-629 should this change"
+				$this->setLine(__LINE__)
+				. " Let us know at gh-629 should this change"
 			);
 			ComponentbuilderHelper::xmlComment(
 				$fieldSetXML,
-				$this->setLine(__LINE__) . " https://github.com/vdm-io/Joomla-Component-Builder/issues/629#issuecomment-750117235"
+				$this->setLine(__LINE__)
+				. " https://github.com/vdm-io/Joomla-Component-Builder/issues/629#issuecomment-750117235"
 			);
 			$fieldXML = $fieldSetXML->addChild('field');
 			ComponentbuilderHelper::xmlAddAttributes($fieldXML, $attributes);
@@ -1486,6 +1489,7 @@ class Fields extends Structure
 			{
 				// set the permission for later
 				$this->hasPermissions[$nameSingleCode] = true;
+
 				// break out here
 				return true;
 			}
@@ -1508,6 +1512,7 @@ class Fields extends Structure
 					{
 						// set the permission for later
 						$this->hasPermissions[$nameSingleCode] = true;
+
 						// break out here
 						return true;
 					}
@@ -1530,12 +1535,14 @@ class Fields extends Structure
 					{
 						// set the permission for later
 						$this->hasPermissions[$nameSingleCode] = true;
+
 						// break out here
 						return true;
 					}
 				}
 			}
 		}
+
 		return $this->hasPermissions[$nameSingleCode];
 	}
 
@@ -4725,19 +4732,40 @@ class Fields extends Structure
 		}
 		else
 		{
-			// set lang (just in case)
-			$listLangName = $langView . '_'
-				. ComponentbuilderHelper::safeFieldName($name, true);
-			// set field name
-			$listFieldName = ComponentbuilderHelper::safeString($name, 'W');
-			// add to lang array
-			$this->setLangContent(
-				$this->lang, $listLangName, $listFieldName
-			);
 			// if label was set use instead
 			if (ComponentbuilderHelper::checkString($langLabel))
 			{
 				$listLangName = $langLabel;
+				// get field label from the lang label
+				if (isset($this->langContent[$this->lang][$langLabel]))
+				{
+					$listFieldName
+						= $this->langContent[$this->lang][$langLabel];
+				}
+				else
+				{
+					// get it from the field xml string
+					$listFieldName = (string) $this->setPlaceholders(
+						ComponentbuilderHelper::getBetween(
+							$field['settings']->xml, 'label="',
+							'"'
+						), $this->placeholders
+					);
+				}
+				// make sure there is no html in the list field name
+				$listFieldName = strip_tags($listFieldName);
+			}
+			else
+			{
+				// set lang (just in case)
+				$listLangName = $langView . '_'
+					. ComponentbuilderHelper::safeFieldName($name, true);
+				// set field name
+				$listFieldName = ComponentbuilderHelper::safeString($name, 'W');
+				// add to lang array
+				$this->setLangContent(
+					$this->lang, $listLangName, $listFieldName
+				);
 			}
 		}
 		// build the list values
@@ -4960,7 +4988,8 @@ class Fields extends Structure
 			// load the category builder - TODO must move all to single view
 			$this->categoryBuilder[$nameListCode] = array('code'      => $name,
 			                                              'name'      => $listLangName,
-			                                              'extension' => $_extension);
+			                                              'extension' => $_extension,
+			                                              'filter'    => $field['filter']);
 			// also set code name for title alias fix
 			$this->catCodeBuilder[$nameSingleCode] = array('code'  => $name,
 			                                               'views' => $otherViews,
@@ -5779,7 +5808,9 @@ class Fields extends Structure
 				&& ComponentbuilderHelper::checkArray(
 					$this->categoryBuilder[$nameListCode]
 				)
-				&& isset($this->categoryBuilder[$nameListCode]['extension']))
+				&& isset($this->categoryBuilder[$nameListCode]['extension'])
+				&& isset($this->categoryBuilder[$nameListCode]['filter'])
+				&& $this->categoryBuilder[$nameListCode]['filter'] >= 1)
 			{
 				$field_filter_sets[] = $this->_t(2) . '<field';
 				$field_filter_sets[] = $this->_t(3) . 'type="category"';

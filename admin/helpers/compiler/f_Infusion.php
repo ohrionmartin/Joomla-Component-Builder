@@ -12,6 +12,9 @@
 // No direct access to this file
 defined('_JEXEC') or die('Restricted access');
 
+use Joomla\CMS\Filesystem\File;
+use Joomla\CMS\Filesystem\Folder;
+
 /**
  * Infusion class
  */
@@ -645,6 +648,13 @@ class Infusion extends Interpretation
 							'site.admin.view.model',
 							$nameSingleCode
 						);
+						// SITE_ADMIN_VIEW_HTML_HEADER <<<DYNAMIC>>> add the header details for the view
+						$this->fileContentDynamic[$nameSingleCode][$this->hhh
+						. 'SITE_ADMIN_VIEW_HTML_HEADER' . $this->hhh]
+							= $this->setFileHeader(
+							'site.admin.view.html',
+							$nameSingleCode
+						);
 						// SITE_ADMIN_VIEW_HEADER <<<DYNAMIC>>> add the header details for the view
 						$this->fileContentDynamic[$nameSingleCode][$this->hhh
 						. 'SITE_ADMIN_VIEW_HEADER' . $this->hhh]
@@ -673,6 +683,12 @@ class Infusion extends Interpretation
 					. 'ADMIN_VIEW_MODEL_HEADER' . $this->hhh]
 						= $this->setFileHeader(
 						'admin.view.model', $nameSingleCode
+					);
+					// ADMIN_VIEW_HTML_HEADER <<<DYNAMIC>>> add the header details for the view
+					$this->fileContentDynamic[$nameSingleCode][$this->hhh
+					. 'ADMIN_VIEW_HTML_HEADER' . $this->hhh]
+						= $this->setFileHeader(
+						'admin.view.html', $nameSingleCode
 					);
 					// ADMIN_VIEW_HEADER <<<DYNAMIC>>> add the header details for the view
 					$this->fileContentDynamic[$nameSingleCode][$this->hhh
@@ -1045,6 +1061,12 @@ class Infusion extends Interpretation
 					. 'ADMIN_VIEWS_MODEL_HEADER' . $this->hhh]
 						= $this->setFileHeader(
 						'admin.views.model', $nameListCode
+					);
+					// ADMIN_VIEWS_HTML_HEADER <<<DYNAMIC>>> add the header details for the views
+					$this->fileContentDynamic[$nameListCode][$this->hhh
+					. 'ADMIN_VIEWS_HTML_HEADER' . $this->hhh]
+						= $this->setFileHeader(
+						'admin.views.html', $nameListCode
 					);
 					// ADMIN_VIEWS_HEADER <<<DYNAMIC>>> add the header details for the views
 					$this->fileContentDynamic[$nameListCode][$this->hhh
@@ -1507,6 +1529,12 @@ class Infusion extends Interpretation
 							= $this->setFileHeader(
 							'custom.admin.view.model', $view['settings']->code
 						);
+						// CUSTOM_ADMIN_VIEW_HTML_HEADER <<<DYNAMIC>>> add the header details for the view
+						$this->fileContentDynamic[$view['settings']->code][$this->hhh
+						. 'CUSTOM_ADMIN_VIEW_HTML_HEADER' . $this->hhh]
+							= $this->setFileHeader(
+							'custom.admin.view.html', $view['settings']->code
+						);
 						// CUSTOM_ADMIN_VIEW_HEADER <<<DYNAMIC>>> add the header details for the view
 						$this->fileContentDynamic[$view['settings']->code][$this->hhh
 						. 'CUSTOM_ADMIN_VIEW_HEADER' . $this->hhh]
@@ -1528,6 +1556,12 @@ class Infusion extends Interpretation
 						. 'CUSTOM_ADMIN_VIEWS_MODEL_HEADER' . $this->hhh]
 							= $this->setFileHeader(
 							'custom.admin.views.model', $view['settings']->code
+						);
+						// CUSTOM_ADMIN_VIEWS_HTML_HEADER <<<DYNAMIC>>> add the header details for the view
+						$this->fileContentDynamic[$view['settings']->code][$this->hhh
+						. 'CUSTOM_ADMIN_VIEWS_HTML_HEADER' . $this->hhh]
+							= $this->setFileHeader(
+							'custom.admin.views.html', $view['settings']->code
 						);
 						// CUSTOM_ADMIN_VIEWS_HEADER <<<DYNAMIC>>> add the header details for the view
 						$this->fileContentDynamic[$view['settings']->code][$this->hhh
@@ -2023,6 +2057,12 @@ class Infusion extends Interpretation
 							= $this->setFileHeader(
 							'site.view.model', $view['settings']->code
 						);
+						// SITE_VIEW_HTML_HEADER <<<DYNAMIC>>> add the header details for the view
+						$this->fileContentDynamic[$view['settings']->code][$this->hhh
+						. 'SITE_VIEW_HTML_HEADER' . $this->hhh]
+							= $this->setFileHeader(
+							'site.view.html', $view['settings']->code
+						);
 						// SITE_VIEW_HEADER <<<DYNAMIC>>> add the header details for the view
 						$this->fileContentDynamic[$view['settings']->code][$this->hhh
 						. 'SITE_VIEW_HEADER' . $this->hhh]
@@ -2050,6 +2090,12 @@ class Infusion extends Interpretation
 						. 'SITE_VIEWS_MODEL_HEADER' . $this->hhh]
 							= $this->setFileHeader(
 							'site.views.model', $view['settings']->code
+						);
+						// SITE_VIEWS_HTML_HEADER <<<DYNAMIC>>> add the header details for the view
+						$this->fileContentDynamic[$view['settings']->code][$this->hhh
+						. 'SITE_VIEWS_HTML_HEADER' . $this->hhh]
+							= $this->setFileHeader(
+							'site.views.html', $view['settings']->code
 						);
 						// SITE_VIEWS_HEADER <<<DYNAMIC>>> add the header details for the view
 						$this->fileContentDynamic[$view['settings']->code][$this->hhh
@@ -2620,14 +2666,14 @@ class Infusion extends Interpretation
 						// build the path to place the lang file
 						$path = $this->componentPath . '/' . $p . '/language/'
 							. $tag . '/';
-						if (!JFolder::exists($path))
+						if (!Folder::exists($path))
 						{
-							JFolder::create($path);
+							Folder::create($path);
 							// count the folder created
 							$this->folderCount++;
 						}
 						// move the file to its place
-						JFile::copy($getPAth, $path . $file_name);
+						File::copy($getPAth, $path . $file_name);
 						// count the file created
 						$this->fileCount++;
 						// add content to it
