@@ -174,12 +174,6 @@ class ComponentbuilderModelServer extends JModelAdmin
 				// basic decrypt data username.
 				$item->username = rtrim($basic->decryptString($item->username), "\0");
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.server');
-			}
 		}
 		$this->sales_serverupdate_servervvvw = $item->id;
 
@@ -397,7 +391,7 @@ class ComponentbuilderModelServer extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/server.js';
+		return 'media/com_componentbuilder/js/server.js';
 	}
     
 	/**

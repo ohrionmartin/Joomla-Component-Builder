@@ -189,12 +189,6 @@ class ComponentbuilderModelAdmin_fields_relations extends JModelAdmin
 					ComponentbuilderHelper::set($this->vastDevMod . '__guid', $item->guid);
 				}
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.admin_fields_relations');
-			}
 		}
 
 		return $item;
@@ -321,7 +315,7 @@ class ComponentbuilderModelAdmin_fields_relations extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/admin_fields_relations.js';
+		return 'media/com_componentbuilder/js/admin_fields_relations.js';
 	}
     
 	/**

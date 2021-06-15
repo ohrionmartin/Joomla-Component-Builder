@@ -371,12 +371,6 @@ class ComponentbuilderModelCustom_admin_view extends JModelAdmin
 				// be sure to update the table if we found repeatable fields that are still not converted
 				$this->_db->updateObject('#__componentbuilder_custom_admin_view', $objectUpdate, 'id');
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.custom_admin_view');
-			}
 		}
 
 		return $item;
@@ -522,7 +516,7 @@ class ComponentbuilderModelCustom_admin_view extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/custom_admin_view.js';
+		return 'media/com_componentbuilder/js/custom_admin_view.js';
 	}
     
 	/**

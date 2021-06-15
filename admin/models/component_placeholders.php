@@ -106,12 +106,6 @@ class ComponentbuilderModelComponent_placeholders extends JModelAdmin
 				$addplaceholders->loadString($item->addplaceholders);
 				$item->addplaceholders = $addplaceholders->toArray();
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.component_placeholders');
-			}
 		}
 
 		return $item;
@@ -235,7 +229,7 @@ class ComponentbuilderModelComponent_placeholders extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/component_placeholders.js';
+		return 'media/com_componentbuilder/js/component_placeholders.js';
 	}
     
 	/**

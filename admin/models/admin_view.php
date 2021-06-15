@@ -665,12 +665,6 @@ class ComponentbuilderModelAdmin_view extends JModelAdmin
 				$item->mysql_table_collate = 'utf8_general_ci';
 			}
 
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.admin_view');
-			}
 		}
 
 		return $item;
@@ -818,7 +812,7 @@ class ComponentbuilderModelAdmin_view extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/admin_view.js';
+		return 'media/com_componentbuilder/js/admin_view.js';
 	}
     
 	/**

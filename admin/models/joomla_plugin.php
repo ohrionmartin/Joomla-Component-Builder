@@ -342,12 +342,6 @@ class ComponentbuilderModelJoomla_plugin extends JModelAdmin
 					ComponentbuilderHelper::set($this->vastDevMod . '__guid', $item->guid);
 				}
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.joomla_plugin');
-			}
 		}
 
 		return $item;
@@ -495,7 +489,7 @@ class ComponentbuilderModelJoomla_plugin extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/joomla_plugin.js';
+		return 'media/com_componentbuilder/js/joomla_plugin.js';
 	}
     
 	/**

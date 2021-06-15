@@ -106,12 +106,6 @@ class ComponentbuilderModelLibrary_config extends JModelAdmin
 				$addconfig->loadString($item->addconfig);
 				$item->addconfig = $addconfig->toArray();
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.library_config');
-			}
 		}
 
 		return $item;
@@ -235,7 +229,7 @@ class ComponentbuilderModelLibrary_config extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/library_config.js';
+		return 'media/com_componentbuilder/js/library_config.js';
 	}
     
 	/**

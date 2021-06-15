@@ -385,12 +385,6 @@ class ComponentbuilderModelDynamic_get extends JModelAdmin
 			{
 				$this->_db->updateObject('#__componentbuilder_dynamic_get', $objectUpdate, 'id');
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.dynamic_get');
-			}
 		}
 
 		return $item;
@@ -542,7 +536,7 @@ class ComponentbuilderModelDynamic_get extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/dynamic_get.js';
+		return 'media/com_componentbuilder/js/dynamic_get.js';
 	}
     
 	/**

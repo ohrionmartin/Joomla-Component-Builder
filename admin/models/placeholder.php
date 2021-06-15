@@ -189,12 +189,6 @@ class ComponentbuilderModelPlaceholder extends JModelAdmin
 					ComponentbuilderHelper::set($this->vastDevMod . '__guid', $item->guid);
 				}
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.placeholder');
-			}
 		}
 
 		return $item;
@@ -316,7 +310,7 @@ class ComponentbuilderModelPlaceholder extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/placeholder.js';
+		return 'media/com_componentbuilder/js/placeholder.js';
 	}
     
 	/**

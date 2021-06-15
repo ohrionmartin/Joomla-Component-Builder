@@ -98,12 +98,6 @@ class ComponentbuilderModelLanguage extends JModelAdmin
 				$registry->loadString($item->metadata);
 				$item->metadata = $registry->toArray();
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.language');
-			}
 		}
 
 		return $item;
@@ -225,7 +219,7 @@ class ComponentbuilderModelLanguage extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/language.js';
+		return 'media/com_componentbuilder/js/language.js';
 	}
     
 	/**

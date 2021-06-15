@@ -98,12 +98,6 @@ class ComponentbuilderModelSnippet_type extends JModelAdmin
 				$registry->loadString($item->metadata);
 				$item->metadata = $registry->toArray();
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.snippet_type');
-			}
 		}
 
 		return $item;
@@ -225,7 +219,7 @@ class ComponentbuilderModelSnippet_type extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/snippet_type.js';
+		return 'media/com_componentbuilder/js/snippet_type.js';
 	}
     
 	/**

@@ -137,12 +137,6 @@ class ComponentbuilderModelComponent_updates extends JModelAdmin
 			{
 				$this->_db->updateObject('#__componentbuilder_component_updates', $objectUpdate, 'id');
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.component_updates');
-			}
 		}
 
 		return $item;
@@ -266,7 +260,7 @@ class ComponentbuilderModelComponent_updates extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/component_updates.js';
+		return 'media/com_componentbuilder/js/component_updates.js';
 	}
     
 	/**

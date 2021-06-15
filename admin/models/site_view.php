@@ -392,12 +392,6 @@ class ComponentbuilderModelSite_view extends JModelAdmin
 			{
 				$this->_db->updateObject('#__componentbuilder_site_view', $objectUpdate, 'id');
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.site_view');
-			}
 		}
 
 		return $item;
@@ -543,7 +537,7 @@ class ComponentbuilderModelSite_view extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/site_view.js';
+		return 'media/com_componentbuilder/js/site_view.js';
 	}
     
 	/**

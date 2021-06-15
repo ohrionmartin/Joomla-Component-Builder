@@ -106,12 +106,6 @@ class ComponentbuilderModelJoomla_module_updates extends JModelAdmin
 				$version_update->loadString($item->version_update);
 				$item->version_update = $version_update->toArray();
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.joomla_module_updates');
-			}
 		}
 
 		return $item;
@@ -235,7 +229,7 @@ class ComponentbuilderModelJoomla_module_updates extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/joomla_module_updates.js';
+		return 'media/com_componentbuilder/js/joomla_module_updates.js';
 	}
     
 	/**

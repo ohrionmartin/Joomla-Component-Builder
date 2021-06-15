@@ -127,12 +127,6 @@ class ComponentbuilderModelAdmin_fields_conditions extends JModelAdmin
 				$conditionsUpdate->addconditions = json_encode($bucket);
 				$this->_db->updateObject('#__componentbuilder_admin_fields_conditions', $conditionsUpdate, 'id');
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.admin_fields_conditions');
-			}
 		}
 
 		return $item;
@@ -259,7 +253,7 @@ class ComponentbuilderModelAdmin_fields_conditions extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/admin_fields_conditions.js';
+		return 'media/com_componentbuilder/js/admin_fields_conditions.js';
 	}
     
 	/**

@@ -92,12 +92,6 @@ class ###Component###Model###View### extends JModelAdmin
 				$registry->loadString($item->metadata);
 				$item->metadata = $registry->toArray();
 			}###METHOD_GET_ITEM###
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_###component###.###view###');
-			}
 		}###LINKEDVIEWGLOBAL###
 
 		return $item;
@@ -127,7 +121,7 @@ class ###Component###Model###View### extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_###component###/models/forms/###view###.js';
+		return 'media/com_###component###/js/###view###.js';
 	}
     
 	/**

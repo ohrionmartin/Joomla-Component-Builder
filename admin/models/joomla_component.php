@@ -548,12 +548,6 @@ class ComponentbuilderModelJoomla_component extends JModelAdmin
 			{
 				$this->_db->updateObject('#__componentbuilder_joomla_component', $objectUpdate, 'id');
 			}
-			
-			if (!empty($item->id))
-			{
-				$item->tags = new JHelperTags;
-				$item->tags->getTagIds($item->id, 'com_componentbuilder.joomla_component');
-			}
 		}
 
 		return $item;
@@ -712,7 +706,7 @@ class ComponentbuilderModelJoomla_component extends JModelAdmin
 	 */
 	public function getScript()
 	{
-		return 'administrator/components/com_componentbuilder/models/forms/joomla_component.js';
+		return 'media/com_componentbuilder/js/joomla_component.js';
 	}
     
 	/**
